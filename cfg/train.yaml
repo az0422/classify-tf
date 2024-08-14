@@ -1,0 +1,10 @@
+epochs: 500
+batch_size: 128
+image_size: 224
+datasets: "imagenet.yaml"
+model: "classify.yaml"
+augment_cfg: "augment.yaml"
+train_cfg: "train.yaml"
+optimizer: "Adam"
+learning_rate: 0.001
+name: "train"
