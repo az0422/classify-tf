@@ -109,7 +109,7 @@ class TestImage(threading.Thread):
             self.arr[self.index] = test is not None
 
 class LoadImage(threading.Thread):
-    def __init__(self, image, arr, image_size, index, resize_method, dtype=np.float32):
+    def __init__(self, image, arr, image_size, index, resize_method, dtype):
         super().__init__()
         self.image = image
         self.arr = arr

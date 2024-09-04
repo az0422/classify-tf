@@ -1,84 +1,158 @@
-import sys
 import os
 import yaml
+import cv2
+import numpy as np
+
+if "TF_CPP_MIN_LOG_LEVEL" not in os.environ.keys():
+    os.environ["TF_CPP_MIN_LOG_LEVEL"] = "4"
+
 import tensorflow as tf
-from tensorflow.keras.optimizers import *
-from modules.tasks import parse_model, SaveCheckpoint
-from modules.dataloader import DataLoader, DataLoaderVal
-from modules.dataloader.utils import load_filelist
-from modules.utils import print_help_train
+from tensorflow.keras.optimizers import Adam, Adadelta, Adagrad, AdamW, Adamax, Ftrl, Lion, Nadam, RMSprop, SGD
+from tensorflow.keras.losses import CategoricalCrossentropy
+
+from modules.nn import ClassifyModel
+from modules.callbacks import SaveCheckpoint, Scheduler
+from modules.losses import MSE, MAE, RMSE
+from modules.dataloader import DataLoader
+
+def apply_user_option(cfg):
+    if not os.path.isfile(cfg["user_option"]): return
+
+    options = yaml.full_load(open(cfg["user_option"], "r"))
+    if options is None: return
+
+    for key in options.keys():
+        cfg[key] = options[key]
+
+def make_checkpoint_path(cfg):
+    checkpoint_path = os.path.join(cfg["checkpoint_path"], cfg["checkpoint_name"])
+    if os.path.isdir(checkpoint_path):
+        index = 2
+        while os.path.isdir(checkpoint_path + str(index)): index += 1
+        checkpoint_path = checkpoint_path + str(index)
+    
+    os.makedirs(checkpoint_path)
+    print("checkpoint path:", checkpoint_path)
+    return checkpoint_path
+
+def create_model(cfg):
+    optimizer_dict = {"adam": Adam, "adadelta": Adadelta, "adagrad": Adagrad, "adamw": AdamW, "adamax": Adamax,
+                      "ftrl": Ftrl, "lion": Lion, "nadam": Nadam, "rmsprop": RMSprop, "sgd": SGD}
+    loss_dict = {"mse": MSE, "rmse": RMSE, "mae": MAE, "cce": CategoricalCrossentropy}
+
+    assert cfg["optimizer"].lower() in optimizer_dict.keys(), "Invalid optimizer"
+    assert cfg["loss"].lower() in loss_dict.keys(), "Invalid loss function"
+
+    classes = len(os.listdir(cfg["train_image"]))
+
+    optimizer = optimizer_dict[cfg["optimizer"].lower()]
+    loss = loss_dict[cfg["loss"].lower()]
+    learning_rate = cfg["learning_rate"]
+
+    model = ClassifyModel(cfg["model"], classes)
+    model.build([None, None, None, 3])
+    model.compile(optimizer=optimizer(learning_rate=learning_rate),
+                  loss=loss(),
+                  metrics=['accuracy'])
+    
+    with open(os.path.join(cfg["path"], "model.yaml"), "w") as f:
+        f.write(model.getConfig())
+
+    return model, classes
+
+def dump_image(images, labels, path, name):
+    images = images * 255.
+    path = os.path.join(path, "images")
+
+    if not os.path.isdir(path):
+        os.makedirs(path)
+    
+    filename = os.path.join(path, name + "-%d-%08d.png")
+    for i, (image, label) in enumerate(zip(images, labels)):
+        label = np.argmax(label)
+        image = image.astype(np.float32)
+        cv2.imwrite(filename % (label, i), image)
+
+def create_dataloaders(cfg):
+    dataloader = DataLoader(cfg["train_image"], cfg, True)
+    dataloaderval = DataLoader(cfg["val_image"], cfg, False)
+
+    dataloader.startAugment()
+    dataloaderval.startAugment()
+
+    checkpoint_path = cfg["path"]
+
+    classes_txt = os.path.join(checkpoint_path, "classes.txt")
+
+    with open(classes_txt, "w") as f:
+        f.write("\n".join(dataloader.classes_name))
+    
+    image, label = dataloader.__getitem__(0)
+    dump_image(image, label, checkpoint_path, "train")
+    image, label = dataloaderval.__getitem__(0)
+    dump_image(image, label, checkpoint_path, "val")
+
+    return dataloader, dataloaderval
+
+def train(model, dataloader, dataloaderval, cfg):
+    model.fit(dataloader,
+              batch_size=cfg["batch_size"],
+              epochs=cfg["epochs"],
+              validation_data=dataloaderval,
+              callbacks=[
+                  SaveCheckpoint(cfg["path"], cfg["save_period"]),
+                  Scheduler(
+                    learning_rate=cfg["learning_rate"],
+                    warmup_lr=cfg["warmup_lr"],
+                    warmup_epochs=cfg["warmup_epochs"],
+                    decay_ratio=cfg["decay_ratio"],
+                    decay_start=cfg["decay_start"],
+                    decay_epochs=cfg["epochs"] - cfg["decay_start"]
+                ),
+    ])
 
 def main():
-    tf.keras.mixed_precision.set_global_policy("mixed_float16")
-
     gpus = tf.config.list_physical_devices('GPU')
     if gpus:
         try:
             for gpu in gpus:
                 tf.config.experimental.set_memory_growth(gpu, True)
         except RuntimeError as e:
-            # 프로그램 시작시에 메모리 증가가 설정되어야만 합니다
             print(e)
-            return
-
-    if "help" in sys.argv:
-        print_help_train()
-        return
+            for gpu in gpus:
+                tf.config.experimental.set_memory_growth(gpu, False)
     
-    args = yaml.full_load(open("cfg/train.yaml"))
-
-    for arg in sys.argv:
-        keys = args.keys()
-        for key in keys:
-            if not arg.startswith(key): continue
-            cast = type(args[key])
-            args[key] = cast(arg.split("=")[1])
-    
-    datasets_path = args["datasets"]
-    if os.path.isfile(datasets_path):
-        datasets = yaml.full_load(open(datasets_path, "r"))
+    gpus = tf.config.list_logical_devices('GPU')
+    if len(gpus) > 1:
+        gpu_process = tf.distribute.MirroredStrategy([gpu.name for gpu in gpus])
+        print("Detected multi-GPU")
+        print([gpu.name for gpu in gpus])
     else:
-        datasets = yaml.full_load(open(os.path.join("cfg/datasets", datasets_path), "r"))
-    
-    train_data = os.path.join(datasets["path"], datasets["train"])
-    val_data = os.path.join(datasets["path"], datasets["val"])
+        gpu_process = tf.distribute.get_strategy()
 
-    dataloader = DataLoader(train_data, args["image_size"], args["batch_size"], args["augment_cfg"])
-    dataloader_val = DataLoaderVal(val_data, args["image_size"], args["batch_size"])
-    
-    if not os.path.isdir("runs"):
-        os.makedirs("runs")
+    cfg = yaml.full_load(open("cfg/settings.yaml", "r"))
+    apply_user_option(cfg)
 
-    save_path = os.path.join("runs", args["name"])
-    if os.path.isdir(save_path):
-        count = 2
-        while True:
-            save_path = os.path.join("runs", args["name"] + str(count))
-            if os.path.isdir(save_path):
-                count +=1
-                continue
-            os.makedirs(save_path)
-            break
-    
-    save_path = os.path.join(save_path, "epoch-%08d.ckpt")
-    
-    model_path = args["model"]
-    if not os.path.isfile(model_path):
-        model_path = os.path.join("cfg/models", model_path)
-    
-    nc = len(datasets["names"])
-    optimizer = eval(args["optimizer"])
-    model = parse_model(model_path, nc)
-    model.compile(optimizer=optimizer(learning_rate=args["learning_rate"]),
-                  loss=tf.keras.losses.SparseCategoricalCrossentropy(),
-                  metrics=["accuracy"])
+    tf.keras.mixed_precision.set_global_policy(cfg["mixed_precision"])
 
-    dataloader.startAugment()
-    model.fit(dataloader,
-              epochs=args["epochs"],
-              batch_size=args["batch_size"],
-              validation_data=dataloader_val,
-              callbacks=[SaveCheckpoint(save_path)])
+    checkpoint_path = make_checkpoint_path(cfg)
+    cfg["path"] = checkpoint_path
+
+    print("create model")
+    with gpu_process.scope():
+        model, classes = create_model(cfg)
+    
+    cfg["classes"] = classes
+    yaml.dump(cfg, open(os.path.join(checkpoint_path, "cfg.yaml"), "w"))
+
+    print("create data loaders")
+    dataloader, dataloaderval = create_dataloaders(cfg)
+
+    print("train start")
+    train(model, dataloader, dataloaderval, cfg)
+
+    dataloader.stopAugment()
+    dataloaderval.stopAugment()
 
 if __name__ == "__main__":
     main()

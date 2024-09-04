@@ -148,50 +148,52 @@ class DataAugment(multiprocessing.Process):
         assert self.images is not None
         assert self.store is not None
 
-        while True:
-            image_taked = [None for _ in range(self.batch_size)]
-            label_taked = [None for _ in range(self.batch_size)]
+        image_taked = [None for _ in range(self.batch_size)]
+        label_taked = [None for _ in range(self.batch_size)]
 
-            for index in range(self.batch_size):
-                take_index = random.randint(0, len(self.images) - 1)
-                image, label = self.images[take_index]
-                
-                image = cv2.imread(image, cv2.IMREAD_COLOR)
-                
-                if self.color_space is not None:
-                    image = cv2.cvtColor(image, self.color_space)
-                
-                image_taked[index] = self._resize(image).astype(np.float32)
-                label_taked[index] = label
+        for index in range(self.batch_size):
+            take_index = random.randint(0, len(self.images) - 1)
+            image, label = self.images[take_index]
             
-            images = np.zeros(
-                [
-                    self.batch_size,
-                    self.image_size,
-                    self.image_size,
-                    3,
-                ], dtype=self.dtype
-            )
-            labels = np.zeros(
-                [
-                    self.batch_size,
-                    self.classes,
-                ], dtype=self.dtype
-            )
+            image = cv2.imread(image, cv2.IMREAD_COLOR)
             
-            for index, (image, label) in enumerate(zip(image_taked, label_taked)):
-                image = self._flip(image)
-                image = self._translate(image)
-                image = self._crop(image)
-                image = self._hsv(image)
-                image = self._noise(image)
-                image = self._clip(image)
-                image = self._dequality(image)
+            if self.color_space is not None:
+                image = cv2.cvtColor(image, self.color_space)
+            
+            image_taked[index] = self._resize(image).astype(np.float32)
+            label_taked[index] = label
+        
+        images = np.zeros(
+            [
+                self.batch_size,
+                self.image_size,
+                self.image_size,
+                3,
+            ], dtype=self.dtype
+        )
+        labels = np.zeros(
+            [
+                self.batch_size,
+                self.classes,
+            ], dtype=self.dtype
+        )
+        
+        for index, (image, label) in enumerate(zip(image_taked, label_taked)):
+            image = self._flip(image)
+            image = self._translate(image)
+            image = self._crop(image)
+            image = self._hsv(image)
+            image = self._noise(image)
+            image = self._clip(image)
+            image = self._dequality(image)
 
-                images[index] = image.astype(self.dtype) / 255.
-                labels[index][label] = 1
+            images[index] = image.astype(self.dtype) / 255.
+            labels[index][label] = 1
 
-            try:
-                self.store.put([images, labels])
-            except:
-                sys.exit()
+        try:
+            self.store.put([images, labels])
+        except:
+            sys.exit()
+        
+        del images
+        del labels

@@ -1,154 +1,145 @@
 import multiprocessing
-import yaml
 import time
-import math
+import random
 import numpy as np
+import math
+import queue
+import cv2
 import os
+import signal
 
 from tensorflow.keras.utils import Sequence
 
 from .utils import load_filelist, LoadImage
 from .augment import DataAugment
 
-class DataLoaderManager(multiprocessing.Process):
-    def __init__(self, images, labels, cfg, results, lock):
+class Loader(multiprocessing.Process):
+    def __init__(self, images, queue, cfg, classes, data_length):
         super().__init__()
-        self.images = []
+        self.images = images
+        self.queue = queue
         self.cfg = cfg
-        self.stop_flag = False
-        self.results = results
-        self.lock = lock
-
-        for image, label in zip(images, labels):
-            self.images.append([image, label])
-    
-    def stop_sig(self):
-        self.stop_flag = True
+        self.classes = classes
+        self.data_length = data_length
+        self.color_space = {"bgr": None, "rgb": cv2.COLOR_BGR2RGB, "hsv": cv2.COLOR_BGR2HSV}[cfg["color_space"].lower()]
     
     def run(self):
-        threads = []
-        for _ in range(self.cfg["loaders"] - 1):
-            augment = DataAugment(
-                seed=int(np.random.rand() * 65535),
-                flip_vertical=self.cfg["flip_vertical"],
-                flip_horizontal=self.cfg["flip_horizontal"],
-                rotate_degree=self.cfg["rotate_degree"],
-                zoom=self.cfg["zoom"],
-                translate_vertical=self.cfg["translate_vertical"],
-                translate_horizontal=self.cfg["translate_horizontal"],
-                hsv_h=self.cfg["hsv_h"],
-                hsv_s=self.cfg["hsv_s"],
-                hsv_v=self.cfg["hsv_v"],
-                noise=self.cfg["noise"]
-            )
-            augment.data(self.images, self.results, self.lock, self.cfg["batch_size"], self.cfg["image_size"])
-            augment.start()
-            threads.insert(0, augment)
-        
+        index = 0
+        batch_size = self.cfg["batch_size"]
         while True:
-            if self.stop_flag: break
-
-            if self.results.qsize() > self.cfg["data_length"] * 2:
-                time.sleep(5e-3)
-                continue
-
-            thread = threads.pop()
-            thread.join()
-            thread.close()
+            if index == 0:
+                random.shuffle(self.images)
             
-            augment = DataAugment(
-                seed=int(np.random.rand() * 65535),
-                flip_vertical=self.cfg["flip_vertical"],
-                flip_horizontal=self.cfg["flip_horizontal"],
-                rotate_degree=self.cfg["rotate_degree"],
-                zoom=self.cfg["zoom"],
-                translate_vertical=self.cfg["translate_vertical"],
-                translate_horizontal=self.cfg["translate_horizontal"],
-                hsv_h=self.cfg["hsv_h"],
-                hsv_s=self.cfg["hsv_s"],
-                hsv_v=self.cfg["hsv_v"],
-                noise=self.cfg["noise"]
+            images_list = self.images[index * batch_size:(index + 1) * batch_size]
+            index = (index + 1) % self.data_length
+
+            if len(images_list) < batch_size:
+                need = batch_size - len(images_list)
+                images_list.extend(self.images[:need])
+            
+            taked_images = [None for _ in range(batch_size)]
+            taked_labels = [None for _ in range(batch_size)]
+            threads = []
+            
+            for i, (image, label) in enumerate(images_list):
+                threads.append(
+                    LoadImage(image, taked_images, self.cfg["image_size"], i, self.cfg["resize_method"], np.float32)
+                )
+                threads[-1].start()
+                taked_labels.append(label)
+            
+            for thread in threads:
+                thread.join()
+            
+            images = np.zeros(
+                [
+                    batch_size,
+                    self.cfg["image_size"],
+                    self.cfg["image_size"],
+                    3,
+                ], dtype=self.cfg["data_type"]
             )
-            augment.data(self.images, self.results, self.lock, self.cfg["batch_size"], self.cfg["image_size"])
-            augment.start()
-            threads.insert(0, augment)
-        
-        for thread in threads:
-            thread.join()
-            thread.close()
+            labels = np.zeros(
+                [
+                    batch_size,
+                    self.classes,
+                ], dtype=np.uint32,
+            )
+
+            for i, (image, label) in enumerate(zip(taked_images, taked_labels)):
+                images[i] = image.astype(self.cfg["data_type"]) / 255.
+                labels[i][label] = 1
+            
+            self.queue.put([images, labels])
 
 class DataLoader(Sequence):
-    def __init__(self, images, image_size, batch_size, cfg):
-        self.images, self.labels, self.categories = load_filelist(images)
+    def __init__(self, images, cfg, augment_flag=False):
+        super().__init__()
+        random.seed(time.time())
+        self.cfg = cfg
+        self.augment_flag = augment_flag
+        images, labels, classes_name = load_filelist(images, self.cfg["file_checkers"])
+        self.classes_name = classes_name
+        self.classes = len(classes_name)
 
-        if not os.path.isdir(cfg):
-            cfg = os.path.join("cfg", cfg)
-        
-        self.cfg = yaml.full_load(open(cfg, "r"))
-        self.cfg["image_size"] = image_size
-        self.cfg["batch_size"] = batch_size
-        self.cfg["data_length"] = math.ceil(len(self.images) / self.cfg["batch_size"])
-
-        self.results = multiprocessing.Manager().Queue()
-        self.lock = multiprocessing.Lock()
-        self.manager = DataLoaderManager(self.images, self.labels, self.cfg, self.results, self.lock)
+        self.images = list(zip(images, labels))
+        self.data_length = math.ceil(len(images) / self.cfg["batch_size"]) if not self.augment_flag or self.cfg["data_length"] is None else self.cfg["data_length"]
+        if self.augment_flag:
+            self.queues = [multiprocessing.Queue(self.cfg["queue_size"]) for _ in range(self.cfg["loaders"])]
+            self.loaders = self.cfg["loaders"]
+        else:
+            self.queues = [multiprocessing.Queue(self.cfg["queue_size"])]
+            self.loaders = 1
+        self.augments = []
+        self.queue_index = 0
     
-    def getCategories(self):
-        return self.categories
+    def _make_process(self, queue):
+        augment = DataAugment(
+            seed=random.randrange(-2147483648, 2147483647),
+            flip_vertical=self.cfg["flip_vertical"],
+            flip_horizontal=self.cfg["flip_horizontal"],
+            rotate_degree=self.cfg["rotate_degree"],
+            zoom=self.cfg["zoom"],
+            translate_vertical=self.cfg["translate_vertical"],
+            translate_horizontal=self.cfg["translate_horizontal"],
+            hsv_h=self.cfg["hsv_h"],
+            hsv_s=self.cfg["hsv_s"],
+            hsv_v=self.cfg["hsv_v"],
+            noise=self.cfg["noise"],
+            dequality=self.cfg["dequality"],
+            crop_ratio=self.cfg["crop_ratio"],
+        )
+        augment.data(
+            self.images,
+            self.classes,
+            queue,
+            batch_size=self.cfg["batch_size"],
+            image_size=self.cfg["image_size"],
+            resize_method=self.cfg["resize_method"],
+            color_space=self.cfg["color_space"],
+            dtype=self.cfg["data_type"],
+        )
+        augment.start()
+        return augment
     
     def startAugment(self):
-        self.manager.start()
+        if self.augment_flag:
+            self.augments = [self._make_process(q) for q in self.queues]
+        else:
+            self.augments = [Loader(self.images, self.queues[0], self.cfg, self.classes, self.data_length)]
+            self.augments[0].start()
     
     def stopAugment(self):
-        self.manager.terminate()
-        self.manager.join()
-        self.manager.close()
-    
+        for augment in self.augments:
+            augment.terminate()
+            augment.join()
+            augment.close()
+
     def __len__(self):
-        return self.cfg["data_length"]
+        return self.data_length
     
     def __getitem__(self, index=0):
-        while True:
-            if self.results.qsize() > 0: break
-            time.sleep(1e-3)
+        image, label = self.queues[self.queue_index].get()
+        self.queue_index = (self.queue_index + 1) % self.loaders
 
-        self.lock.acquire()
-        image, label = self.results.get()
-        self.lock.release()
-        
         return image, label
-
-class DataLoaderVal(Sequence):
-    def __init__(self, images, image_size, batch_size):
-        self.images, self.labels, self.categories = load_filelist(images)
-        self.image_size = image_size
-        self.batch_size = batch_size
-
-    def __len__(self):
-        return math.ceil(len(self.images) / self.batch_size)
-    
-    def __getitem__(self, index=0):
-        images = self.images[index * self.batch_size:(index + 1) * self.batch_size]
-        labels = self.labels[index * self.batch_size:(index + 1) * self.batch_size]
-
-        images_len = len(images)
-        images.extend(images[:self.batch_size - images_len])
-        labels.extend(labels[:self.batch_size - images_len])
-
-        images_load = [None for _ in range(self.batch_size)]
-        threads = []
-        for index, (image) in enumerate(images):
-            threads.append(LoadImage(image, images_load, self.image_size, index))
-            threads[-1].start()
-        
-        for thread in threads:
-            thread.join()
-        
-        images_np = np.zeros([self.batch_size, self.image_size, self.image_size, 3], dtype=np.float32)
-        labels_np = np.zeros([self.batch_size], dtype=np.float32)
-
-        for index, (image, label) in enumerate(zip(images_load, labels)):
-            images_np[index] = image
-            labels_np[index] = label
-        
-        return images_np, labels_np

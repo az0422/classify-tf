@@ -1,0 +1,44 @@
+# user options
+# as comment or blank will be applied default
+
+# Data augmentation options
+# flip_vertical: 0.5 # probability
+# flip_horizontal: 0.5 # probability
+# rotate_degree: 0 # degree
+# zoom: 2 # multiply
+# translate_vertical: 0.25 # ratio
+# translate_horizontal: 0.25 # ratio
+# hsv_h: 0.05 # ratio
+# hsv_s: 0.5 # ratio
+# hsv_v: 0.5 # ratio
+# noise: 0.125 # opacity
+# dequality: 50 # ratio
+# crop_ratio: 0.5 # ratio
+# color_space: BGR # color space of input image. select from: BGR, RGB, HSV
+# data_length: # manual setting length
+# file_checkers: 128 # threads of file checker
+# loaders: 8 # sub-processes of dataloader
+# queue_size: 16 # maximum queue size per dataloader
+# data_type: float32 # select from: float16, float32, float64, float128
+# resize_method: contain # select from: default (same as contain), contain, stretch
+
+# Datasets options
+# train_image: datasets/train # train image path
+# val_image: datasets/val # validation image path
+
+# Train options
+# checkpoint_path: runs # checkpoint root path
+# checkpoint_name: train # checkpoint name
+# optimizer: Adam # optimizer
+# loss: CCE # loss function. select from: CCE (Categorical Cross-Entropy), BCE (Binary Cross-Entropy), MAE (Mean Average Error), MSE (Mean Squared Error), RMSE (Rooted Mean Squared Error)
+# learning_rate: 0.0001 # learning rate
+# batch_size: 32 # batch size
+# image_size: 320 # input image size
+# epochs: 500 # epochs
+# mixed_precision: mixed_float16 # precision policy. select from: float32, mixed_float16, mixed_bfloat16, etc...
+# warmup_epochs: 10 # increase learning rate until of. 0 or under is disable.
+# warmup_lr: 0.001 # in start learning rate. learning_rate * warmup_lr
+# decay_ratio: 0.1 # in end learning rate. learning_rate * decay_lr
+# decay_start: 450 # start decay since of. 0 or under is disable.
+# save_period: 1 # save weights frequency
+# model: classify-normal.yaml # model path. defaul models are on cfg/models
