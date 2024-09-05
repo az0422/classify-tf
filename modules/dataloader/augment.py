@@ -176,7 +176,7 @@ class DataAugment(multiprocessing.Process):
                 [
                     self.batch_size,
                     self.classes,
-                ], dtype=self.dtype
+                ], dtype=np.uint8
             )
             
             for index, (image, label) in enumerate(zip(image_taked, label_taked)):

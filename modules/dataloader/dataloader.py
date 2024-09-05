@@ -46,7 +46,7 @@ class Loader(multiprocessing.Process):
                     LoadImage(image, taked_images, self.cfg["image_size"], i, self.cfg["resize_method"], np.float32)
                 )
                 threads[-1].start()
-                taked_labels.append(label)
+                taked_labels[i] = label
             
             for thread in threads:
                 thread.join()
@@ -63,7 +63,7 @@ class Loader(multiprocessing.Process):
                 [
                     batch_size,
                     self.classes,
-                ], dtype=np.uint32,
+                ], dtype=np.uint8,
             )
 
             for i, (image, label) in enumerate(zip(taked_images, taked_labels)):
