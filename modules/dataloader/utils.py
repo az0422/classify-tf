@@ -1,27 +1,14 @@
 import os
-import yaml
+from typing import Union
 
 import cv2
 import numpy as np
 import threading
 
-def parse_cfg(cfg):
-    cfg_default = yaml.full_load(open(cfg, "r"))
-    if cfg_default["user_option"] is None or not os.path.isdir(cfg_default["user_option"]):
-        return cfg_default
-    
-    user_option = yaml.full_load(open(cfg_default["user_option"], "r"))
-    
-    for key in user_option.keys():
-        if user_option[key] is None: continue
-        cfg_default[key] = user_option[key]
-    
-    return cfg_default
-
-def resize_stretch(image, target_size=640):
+def resize_stretch(image: np.ndarray, target_size=640):
     return cv2.resize(image, (target_size, target_size))
 
-def resize_contain(image, target_size=640):
+def resize_contain(image: np.ndarray, target_size=640):
     height, width, _ = image.shape
 
     scale = target_size / max(height, width)
@@ -39,10 +26,10 @@ def resize_contain(image, target_size=640):
 
     return image
 
-def checker_log(ok, none):
+def checker_log(ok: int, none: int):
     print("checking files... ok: %-16d\terror: %-16d" % (ok, none), end="\r")
 
-def load_filelist(image, loaders):
+def load_filelist(image: str, loaders: int):
     images = []
     labels = []
 
@@ -90,7 +77,7 @@ def load_filelist(image, loaders):
     return images, labels, categories
 
 class TestImage(threading.Thread):
-    def __init__(self, image, arr, index):
+    def __init__(self, image: str, arr: list, index: int):
         super().__init__()
         self.image = image
         self.arr = arr
@@ -109,7 +96,7 @@ class TestImage(threading.Thread):
             self.arr[self.index] = test is not None
 
 class LoadImage(threading.Thread):
-    def __init__(self, image, arr, image_size, index, resize_method, dtype=np.float32):
+    def __init__(self, image: str, arr: Union[list, np.ndarray], image_size: int, index: int, resize_method: str, dtype=np.float32):
         super().__init__()
         self.image = image
         self.arr = arr

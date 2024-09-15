@@ -1,4 +1,5 @@
 import os
+import sys
 import yaml
 import cv2
 import numpy as np
@@ -10,19 +11,11 @@ import tensorflow as tf
 from tensorflow.keras.optimizers import Adam, Adadelta, Adagrad, AdamW, Adamax, Ftrl, Lion, Nadam, RMSprop, SGD
 from tensorflow.keras.losses import CategoricalCrossentropy
 
-from modules.nn import ClassifyModel
-from modules.callbacks import SaveCheckpoint, Scheduler
-from modules.losses import MSE, MAE, RMSE
+from modules.utils import parse_cfg, apply_local_cfg
+from modules.nn.model import ClassifyModel
+from modules.nn.callbacks import SaveCheckpoint, Scheduler, GarbageCollect
+from modules.nn.losses import MSE, MAE, RMSE
 from modules.dataloader import DataLoader
-
-def apply_user_option(cfg):
-    if not os.path.isfile(cfg["user_option"]): return
-
-    options = yaml.full_load(open(cfg["user_option"], "r"))
-    if options is None: return
-
-    for key in options.keys():
-        cfg[key] = options[key]
 
 def make_checkpoint_path(cfg):
     checkpoint_path = os.path.join(cfg["checkpoint_path"], cfg["checkpoint_name"])
@@ -88,30 +81,33 @@ def create_dataloaders(cfg):
         f.write("\n".join(dataloader.classes_name))
     
     image, label = dataloader.__getitem__(0)
-    dump_image(image, label, checkpoint_path, "train")
+    dump_image(image.numpy(), label.numpy(), checkpoint_path, "train")
     image, label = dataloaderval.__getitem__(0)
-    dump_image(image, label, checkpoint_path, "val")
+    dump_image(image.numpy(), label.numpy(), checkpoint_path, "val")
 
     return dataloader, dataloaderval
 
 def train(model, dataloader, dataloaderval, cfg):
-    model.fit(dataloader,
-              batch_size=cfg["batch_size"],
-              epochs=cfg["epochs"],
-              validation_data=dataloaderval,
-              callbacks=[
-                  SaveCheckpoint(cfg["path"], cfg["save_period"]),
-                  Scheduler(
-                    learning_rate=cfg["learning_rate"],
-                    warmup_lr=cfg["warmup_lr"],
-                    warmup_epochs=cfg["warmup_epochs"],
-                    decay_ratio=cfg["decay_ratio"],
-                    decay_start=cfg["decay_start"],
-                    decay_epochs=cfg["epochs"] - cfg["decay_start"]
-                ),
-    ])
+    model.fit(
+        dataloader,
+        batch_size=cfg["batch_size"],
+        epochs=cfg["epochs"],
+        validation_data=dataloaderval,
+        callbacks=[
+            SaveCheckpoint(cfg["path"], cfg["save_period"]),
+            Scheduler(
+                learning_rate=cfg["learning_rate"],
+                warmup_lr=cfg["warmup_lr"],
+                warmup_epochs=cfg["warmup_epochs"],
+                decay_ratio=cfg["decay_ratio"],
+                decay_start=cfg["decay_start"],
+                decay_epochs=cfg["epochs"] - cfg["decay_start"]
+            ),
+            GarbageCollect()
+        ],
+    )
 
-def main():
+def main(cfg):
     gpus = tf.config.list_physical_devices('GPU')
     if gpus:
         try:
@@ -129,9 +125,6 @@ def main():
         print([gpu.name for gpu in gpus])
     else:
         gpu_process = tf.distribute.get_strategy()
-
-    cfg = yaml.full_load(open("cfg/settings.yaml", "r"))
-    apply_user_option(cfg)
 
     tf.keras.mixed_precision.set_global_policy(cfg["mixed_precision"])
 
@@ -155,4 +148,15 @@ def main():
     dataloaderval.stopAugment()
 
 if __name__ == "__main__":
-    main()
+    cfg = parse_cfg("cfg/settings.yaml")
+
+    local_cfg = None
+    for arg in sys.argv:
+        if arg.startswith("cfg"):
+            local_cfg = arg.split("=", maxsplit=1)[1]
+            break
+    
+    if local_cfg is not None:
+        cfg = apply_local_cfg(cfg, local_cfg)
+    
+    main(cfg)

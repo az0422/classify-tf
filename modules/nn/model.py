@@ -1,6 +1,8 @@
 import yaml
 import os
 import math
+import numpy as np
+import gc
 
 import tensorflow as tf
 from tensorflow.keras import layers
@@ -44,12 +46,15 @@ def parse_model(cfg, classes):
     channels = [3]
     layer_info = []
 
-    print("=" * (16 + 8 + 32 + 32))
-    print("%16s%8s%32s%32s" % ("index", "depth", "layer_name", "args"))
-    print("-" * (16 + 8 + 32 + 32))
+    print("=" * (24 + 12 + 40 + 40))
+    print("%24s%12s%40s%40s" % ("index", "depth", "layer_name", "args"))
+    print("-" * (24 + 12 + 40 + 40))
 
     for index, depth, layer_name, args in cfg["backbone"] + cfg["head"]:
         if layer_name.startswith("layers."):
+            layer = eval(layer_name)
+            layer_name = "tf.keras." + layer_name
+        elif layer_name.startswith("tf.keras.layers."):
             layer = eval(layer_name)
         else:
             layer = layers_dict[layer_name]
@@ -97,11 +102,11 @@ def parse_model(cfg, classes):
             channels.append(sum(ch))
         
         elif layer is Classify:
-            ch = channels[index_] if type(index_) is int else [channels[i] for i in index_]
+            ch = channels[index_]
             args.insert(0, ch)
             args[1] = classes
         
-        print("%16s%8s%32s%32s" % (index, depth, layer_name, args))
+        print("%24s%12s%40s%40s" % (index, depth, layer_name, args))
         
         if depth != 1:
             m = Sequential([layer(*args) for _ in range(depth)])
@@ -115,17 +120,17 @@ def parse_model(cfg, classes):
 
         layer_info.append([index, depth, layer_name, args])
     
-    print("-" * (16 + 8 + 32 + 32))
+    print("-" * (24 + 12 + 40 + 40))
 
     return layers_list, layer_info, cfg_str
 
 class ClassifyModel(Model):
-    def __init__(self, cfg, classes, **kwargs):
+    def __init__(self, cfg, classes, *args, **kwargs):
         self.layers_list, self.layer_info, self.cfg = parse_model(cfg, classes)
 
         super().__init__(self.layers_list[0], self.layers_list[-1], **kwargs)
 
         print("Total parameters:", self.count_params())
-    
+
     def getConfig(self):
         return self.cfg

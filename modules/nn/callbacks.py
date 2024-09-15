@@ -1,4 +1,5 @@
 import os
+import gc
 
 import tensorflow as tf
 from tensorflow.keras.callbacks import Callback
@@ -9,15 +10,27 @@ class SaveCheckpoint(Callback):
         self.save_period = save_period
 
         weights_path = os.path.join(path, "weights")
-        self.weights = os.path.join(weights_path, "epoch-%016d.ckpt" if tf.__version__ < "2.16.0" else "epoch-%016d.weights.h5")
+        suffix = ".weights.h5" if tf.__version__ >= "2.16.0" else ".ckpt"
+        self.weights_epoch = os.path.join(weights_path, "epoch-%016d") + suffix
+        self.weights_best = os.path.join(weights_path, "best") + suffix
+        self.weights_last = os.path.join(weights_path, "last") + suffix
         self.log = os.path.join(path, "accuracy.txt")
+
+        self.best_accuracy = 0
 
         if not os.path.isdir(weights_path):
             os.makedirs(weights_path)
 
     def on_epoch_end(self, epoch, logs=None):
-        if epoch % self.save_period == 0:
-            self.model.save_weights(self.weights % (epoch + 1))
+        self.model.save_weights(self.weights_last)
+
+        accuracy = logs["accuracy"]
+        if self.best_accuracy <= accuracy:
+            self.best_accuracy = accuracy
+            self.model.save_weights(self.weights_best)
+
+        if self.save_period > 0 and epoch % self.save_period == 0:
+            self.model.save_weights(self.weights_epoch % (epoch + 1))
         
         if hasattr(self.model.optimizer, "lr"):
             lr = float(tf.keras.backend.get_value(self.model.optimizer.lr))
@@ -62,3 +75,10 @@ class Scheduler(Callback):
             tf.keras.backend.set_value(self.model.optimizer.lr, lr)
         else:
             self.model.optimizer.learning_rate.assign(lr)
+
+class GarbageCollect(Callback):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+    
+    def on_epoch_end(self, *args, **kwargs):
+        gc.collect()

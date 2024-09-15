@@ -1,65 +1,39 @@
 import cv2
 import numpy as np
-import multiprocessing
 import random
-import sys
+import multiprocessing
+import queue
+import gc
 
 from .utils import LoadImage, resize_contain, resize_stretch
 
 class DataAugment(multiprocessing.Process):
-    def __init__(
-            self,
-            seed=0,
-            flip_vertical=0.5,
-            flip_horizontal=0.5,
-            rotate_degree=0,
-            zoom=1,
-            translate_vertical=0,
-            translate_horizontal=0,
-            hsv_h=0,
-            hsv_s=0,
-            hsv_v=0,
-            noise=0,
-            dequality=25,
-            crop_ratio=0.5,
-    ):
+    def __init__(self, seed, images, classes, batch_size, cfg):
         super().__init__()
         np.random.seed((~seed) & 0xFFFFFFFF)
         random.seed(seed if np.random.rand() > 0.5 else seed * -1)
 
-        self.flip_vertical = flip_vertical
-        self.flip_horizontal = flip_horizontal
-        self.rotate_degree = rotate_degree
-        self.zoom = zoom
-        self.translate_vertical = translate_vertical
-        self.translate_horizontal = translate_horizontal
-        self.hsv_h = hsv_h
-        self.hsv_s = hsv_s
-        self.hsv_v = hsv_v
-        self.noise = noise
-        self.dequality = dequality
-        self.crop_ratio = crop_ratio
+        self.images = images
+        self.classes = classes
+        self.cfg = cfg
+        self.stop = False
 
-        self.images = None
-        self.classes = 0
-        self.store = None
-        self.batch_size = 16
-        self.image_size = 320
-        self.resize_method = "default"
-        self.dtype = "float32"
-    
+        self.queue = multiprocessing.Queue(self.cfg["queue_size"])
+        self.batch_size = batch_size
+        self.color_space = self.cfg["color_space"].lower()
+
     def _resize(self, image):
-        if self.resize_method in ("default", "contain"):
-            return resize_contain(image, self.image_size)
-        if self.resize_method in ("stretch"):
-            return resize_stretch(image, self.image_size)
-        raise Exception("invalid resize method %s" % self.resize_method)
+        if self.cfg["resize_method"] in ("default", "contain"):
+            return resize_contain(image, self.cfg["image_size"])
+        if self.cfg["resize_method"] in ("stretch",):
+            return resize_stretch(image, self.cfg["image_size"])
+        raise Exception("invalid resize method %s" % self.cfg["resize_method"])
     
     def _flip(self, image):
-        if np.random.rand() < self.flip_vertical:
+        if np.random.rand() < self.cfg["flip_vertical"]:
             image = image[::-1]
         
-        if np.random.rand() < self.flip_horizontal:
+        if np.random.rand() < self.cfg["flip_horizontal"]:
             image = image[:, ::-1]
         
         return image
@@ -67,7 +41,7 @@ class DataAugment(multiprocessing.Process):
     def _crop(self, image):
         height, width, _ = image.shape
 
-        crop_width, crop_height = ((1 - np.random.rand(2) * self.crop_ratio) * [width, height]).astype(np.int32)
+        crop_width, crop_height = ((1 - np.random.rand(2) * self.cfg["crop_ratio"]) * [width, height]).astype(np.int32)
         padding = [width - crop_width, height - crop_height]
         offset_x, offset_y = (np.random.rand(2) * padding).astype(np.int32)
 
@@ -79,24 +53,25 @@ class DataAugment(multiprocessing.Process):
     
     def _translate(self, image):
         height, width, _ = image.shape
-        vertical = (np.random.rand() * self.translate_vertical * 2 - self.translate_vertical) * height
-        horizontal = (np.random.rand() * self.translate_horizontal * 2 - self.translate_horizontal) * width
-        degree = np.random.rand() * self.rotate_degree * 2 - self.rotate_degree
+        vertical = (np.random.rand() * self.cfg["translate_vertical"] * 2 - self.cfg["translate_vertical"]) * height
+        horizontal = (np.random.rand() * self.cfg["translate_horizontal"] * 2 - self.cfg["translate_horizontal"]) * width
+        degree = np.random.rand() * self.cfg["rotate_degree"] * 2 - self.cfg["rotate_degree"]
 
-        zoom = np.random.rand() * (self.zoom - 1) + 1
+        zoom = np.random.rand() * (self.cfg["zoom"] - 1) + 1
         if np.random.rand() > 0.5: zoom = 1 / zoom
 
         matrix = cv2.getRotationMatrix2D((width // 2, height // 2), degree, zoom)
         matrix[:2, 2] += [horizontal, vertical]
 
-        image = cv2.warpAffine(image.astype(np.float32), matrix, [width, height])
+        image = cv2.warpAffine(image, matrix, [width, height])
 
-        return image.astype(np.float32)
+        return image
     
     def _hsv(self, image):
-        image = cv2.cvtColor(image.astype(np.uint8), cv2.COLOR_BGR2HSV).astype(np.float32)
+        if self.color_space != "hsv":
+            image = cv2.cvtColor(image.astype(np.uint8), {"bgr": cv2.COLOR_BGR2HSV, "rgb": cv2.COLOR_RGB2HSV}[self.color_space]).astype(np.float32)
 
-        hsv = np.array([self.hsv_h, self.hsv_s, self.hsv_v], dtype=np.float32)
+        hsv = np.array([self.cfg["hsv_h"], self.cfg["hsv_s"], self.cfg["hsv_v"]], dtype=np.float32)
         hsv[hsv > 1.] = 1.
         hsv[hsv < 0.] = 0.
 
@@ -106,71 +81,47 @@ class DataAugment(multiprocessing.Process):
         image[..., 0] = image[..., 0] % 180
         image[image > 255.] = 255.
         image[image < 0.] = 0.
-        image = cv2.cvtColor(image.astype(np.uint8), cv2.COLOR_HSV2BGR).astype(np.float32)
+
+        if self.color_space != "hsv":
+            image = cv2.cvtColor(image.astype(np.uint8), {"bgr": cv2.COLOR_HSV2BGR, "rgb": cv2.COLOR_HSV2RGB}[self.color_space]).astype(np.float32)
 
         return image
     
     def _noise(self, image):
-        noise = (np.random.rand(*image.shape) * 255. * self.noise).astype(np.float32)
-        image += noise
+        noise = (np.random.rand(*image.shape) * 255. * self.cfg["noise"]).astype(np.float32)
 
-        return image
-    
-    def _clip(self, image):
-        over = image > 255.
-        under = image < 0.
-
-        image[over] = 255.
-        image[under] = 0.
+        if self.color_space == "hsv":
+            noise = cv2.cvtColor(noise, cv2.COLOR_BGR2HSV)
+        
+        image = np.clip(image, 0, 255.)
 
         return image
     
     def _dequality(self, image):
-        quality = int(100 - np.random.rand() * self.dequality)
+        quality = int(100 - np.random.rand() * self.cfg["dequality"])
+        
+        if self.color_space != "bgr":
+            image = cv2.cvtColor(image, {"rgb": cv2.COLOR_RGB2BGR, "hsv": cv2.COLOR_HSV2BGR}[self.color_space])
+        
         image_np = cv2.imencode(".jpeg", image.astype(np.uint8), [cv2.IMWRITE_JPEG_QUALITY, quality])[1]
         image = cv2.imdecode(image_np, cv2.IMREAD_COLOR).astype(np.float32)
 
+        if self.color_space != "bgr":
+            image = cv2.cvtColor(image, {"rgb": cv2.COLOR_BGR2RGB, "hsv": cv2.COLOR_BGR2HSV}[self.color_space])
+
         return image
     
-    def data(self, images, classes, store, batch_size=16, image_size=320, resize_method="default", color_space="bgr", dtype="float32"):
-        color_space_dict = {"bgr": None, "rgb": cv2.COLOR_BGR2RGB, "hsv": cv2.COLOR_BGR2HSV}
-
-        self.images = images
-        self.classes = classes
-        self.store = store
-        self.batch_size = batch_size
-        self.image_size = image_size
-        self.resize_method = resize_method
-        self.color_space = color_space_dict[color_space.lower()]
-        self.dtype = dtype
-    
     def run(self):
-        assert self.images is not None
-        assert self.store is not None
-
-        while True:
-            image_taked = [None for _ in range(self.batch_size)]
-            label_taked = [None for _ in range(self.batch_size)]
-
-            for index in range(self.batch_size):
-                take_index = random.randint(0, len(self.images) - 1)
-                image, label = self.images[take_index]
-                
-                image = cv2.imread(image, cv2.IMREAD_COLOR)
-                
-                if self.color_space is not None:
-                    image = cv2.cvtColor(image, self.color_space)
-                
-                image_taked[index] = self._resize(image).astype(np.float32)
-                label_taked[index] = label
-            
+        gc_count = 0
+        while not self.stop:
+            taked_indices = [random.randrange(0, len(self.images) - 1) for _ in range(self.batch_size)]
             images = np.zeros(
                 [
                     self.batch_size,
-                    self.image_size,
-                    self.image_size,
-                    3,
-                ], dtype=self.dtype
+                    self.cfg["image_size"],
+                    self.cfg["image_size"],
+                    3
+                ], dtype=self.cfg["data_type"]
             )
             labels = np.zeros(
                 [
@@ -178,20 +129,36 @@ class DataAugment(multiprocessing.Process):
                     self.classes,
                 ], dtype=np.uint8
             )
-            
-            for index, (image, label) in enumerate(zip(image_taked, label_taked)):
+
+            for index, taked_index in enumerate(taked_indices):
+                image, label = self.images[taked_index]
+                image = cv2.imread(image, cv2.IMREAD_COLOR)
+
+                if self.color_space != "bgr":
+                    image = cv2.cvtColor(image, {"rgb": cv2.COLOR_BGR2RGB, "hsv": cv2.COLOR_BGR2HSV}[self.color_space])
+                
+                image = self._resize(image)
                 image = self._flip(image)
                 image = self._translate(image)
-                image = self._crop(image)
                 image = self._hsv(image)
                 image = self._noise(image)
-                image = self._clip(image)
                 image = self._dequality(image)
 
-                images[index] = image.astype(self.dtype) / 255.
+                images[index] = image / 255.
                 labels[index][label] = 1
 
-            try:
-                self.store.put([images, labels])
-            except:
-                sys.exit()
+            self.queue.put([images, labels])
+
+            del (
+                images,
+                labels,
+            )
+
+            gc_count = (gc_count + 1) % len(self.images)
+
+            if gc_count == len(self.images) // self.batch_size - 1:
+                gc.collect()
+
+        
+    def getData(self):
+        return self.queue.get()

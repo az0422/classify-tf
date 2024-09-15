@@ -1,6 +1,6 @@
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import MaxPooling2D
+from tensorflow.keras.layers import MaxPooling2D, Dense, GlobalAveragePooling2D, UpSampling2D
 
 from .layers import *
 
@@ -9,9 +9,9 @@ class ResNet(Layer):
         super().__init__()
         channels_h = round(out_channels * expand)
         self.m = Sequential([
-            Conv(channels_h, 1, 1),
-            Conv(channels_h, 3, 1),
-            Conv(out_channels, 1, 1),
+            Conv(in_channels, channels_h, 1, 1),
+            Conv(channels_h, channels_h, 3, 1),
+            Conv(channels_h, out_channels, 1, 1),
         ])
     
     def call(self, x):
@@ -22,12 +22,12 @@ class CSPResNet(Layer):
         super().__init__()
 
         channels_h = out_channels // 2
-        self.conv1 = Conv(channels_h, 1, 1)
-        self.conv2 = Conv(channels_h, 1, 1)
-        self.conv3 = Conv(out_channels, 1, 1)
+        self.conv1 = Conv(in_channels, channels_h, 1, 1)
+        self.conv2 = Conv(channels_h, channels_h, 1, 1)
+        self.conv3 = Conv(channels_h, out_channels, 1, 1)
 
         self.m = Sequential([
-            ResNet(channels_h, expand) for _ in range(n)
+            ResNet(in_channels, channels_h, expand) for _ in range(n)
         ])
     
     def call(self, x):
