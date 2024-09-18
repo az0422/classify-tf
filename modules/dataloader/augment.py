@@ -121,7 +121,7 @@ class DataAugment(multiprocessing.Process):
                     self.cfg["image_size"],
                     self.cfg["image_size"],
                     3
-                ], dtype=self.cfg["data_type"]
+                ], dtype=np.float32
             )
             labels = np.zeros(
                 [
@@ -154,7 +154,7 @@ class DataAugment(multiprocessing.Process):
                 labels,
             )
 
-            gc_count = (gc_count + 1) % len(self.images)
+            gc_count = (gc_count + 1) % len(self.images) // self.batch_size
 
             if gc_count == len(self.images) // self.batch_size - 1:
                 gc.collect()

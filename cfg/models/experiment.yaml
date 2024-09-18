@@ -1,0 +1,14 @@
+width_multiple: 1.0
+depth_multiple: 1.0
+
+backbone:
+ - [-1, 1, Conv, [32, 3, 2]]
+ - [-1, 1, Conv, [64, 3, 2]]
+ - [-1, 1, tf.keras.layers.GlobalAveragePooling2D, []]
+ - [-1, 1, Reshape, [[64, 1]]]
+ - [-1, 1, Conv1d, [128, 3, 2]]
+ - [-1, 1, Conv1d, [256, 3, 2]]
+ - [-1, 1, Conv1d, [512, 3, 2]]
+
+head:
+ - [-1, 1, Classify1d, [0]]

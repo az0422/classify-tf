@@ -1,5 +1,6 @@
 import os
 import gc
+import math
 
 import tensorflow as tf
 from tensorflow.keras.callbacks import Callback
@@ -14,7 +15,7 @@ class SaveCheckpoint(Callback):
         self.weights_epoch = os.path.join(weights_path, "epoch-%016d") + suffix
         self.weights_best = os.path.join(weights_path, "best") + suffix
         self.weights_last = os.path.join(weights_path, "last") + suffix
-        self.log = os.path.join(path, "accuracy.txt")
+        self.log = os.path.join(path, "train.csv")
 
         self.best_accuracy = 0
 
@@ -24,7 +25,7 @@ class SaveCheckpoint(Callback):
     def on_epoch_end(self, epoch, logs=None):
         self.model.save_weights(self.weights_last)
 
-        accuracy = logs["accuracy"]
+        accuracy = logs["val_accuracy"]
         if self.best_accuracy <= accuracy:
             self.best_accuracy = accuracy
             self.model.save_weights(self.weights_best)
@@ -48,12 +49,13 @@ class SaveCheckpoint(Callback):
             ))
 
 class Scheduler(Callback):
-    def __init__(self, learning_rate=1e-3, warmup_lr=1.0, warmup_epochs=0, decay_ratio=1.0, decay_start=0, decay_epochs=0):
+    def __init__(self, learning_rate=1e-3, warmup_lr=1.0, warmup_epochs=0, scheduler_type="linear", decay_lr=1.0, decay_start=0, decay_epochs=0):
         super().__init__()
         self.learning_rate = learning_rate
         self.warmup_lr = warmup_lr
         self.warmup_epochs = warmup_epochs
-        self.decay_ratio = decay_ratio
+        self.scheduler_type = scheduler_type
+        self.decay_lr = decay_lr
         self.decay_start = decay_start
         self.decay_epochs = decay_epochs
 
@@ -69,7 +71,15 @@ class Scheduler(Callback):
         if epoch < self.warmup_epochs:
             lr = (self.learning_rate - self.learning_rate * self.warmup_lr) / self.warmup_epochs * epoch + self.learning_rate * self.warmup_lr
         elif self.decay_start > 0 and epoch > self.decay_start:
-            lr = self.learning_rate - (self.learning_rate - self.learning_rate * self.decay_ratio) / self.decay_epochs * (epoch - self.decay_start)
+            decay_epoch = epoch - self.decay_start
+            if self.scheduler_type == "linear":
+                lr = self.learning_rate - (self.learning_rate - self.learning_rate * self.decay_lr) / self.decay_epochs * decay_epoch
+            elif self.scheduler_type == "cos":
+                lr = (math.cos(math.pi / self.decay_epochs * decay_epoch) + 1) / 2 * (self.learning_rate - self.learning_rate * self.decay_lr) + self.learning_rate * self.decay_lr
+            else:
+                lr = self.learning_rate
+        else:
+            lr = self.learning_rate
         
         if hasattr(self.model.optimizer, "lr"):
             tf.keras.backend.set_value(self.model.optimizer.lr, lr)

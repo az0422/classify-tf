@@ -7,6 +7,9 @@ def parse_cfg(cfg):
         return cfg_default
     
     user_option = yaml.full_load(open(cfg_default["user_option"], "r"))
+
+    if user_option is None:
+        return cfg_default
     
     for key in user_option.keys():
         if user_option[key] is None: continue

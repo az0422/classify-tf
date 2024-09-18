@@ -1,2 +1,6 @@
 __pycache__/
 runs/
+train/
+dataloader-test/
+dataloader.py
+.venv/

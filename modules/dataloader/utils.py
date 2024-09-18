@@ -1,5 +1,6 @@
 import os
 from typing import Union
+import queue
 
 import cv2
 import numpy as np
@@ -34,7 +35,7 @@ def load_filelist(image: str, loaders: int):
     labels = []
 
     images_test = []
-    labels_test = []
+    test_queue = queue.Queue()
 
     categories = sorted(os.listdir(image))
 
@@ -46,64 +47,60 @@ def load_filelist(image: str, loaders: int):
         for file in files:
             file_path = os.path.join(image, category, file)
             if os.path.isdir(file_path): continue
-            images_test.append(file_path)
-            labels_test.append(id)
+            images_test.append([file_path, id])
     
     none = 0
     ok = 0
     
     for mass in range(0, len(images_test), loaders):
-        threads = []
-        images_none_test = [-1 for _ in range(loaders)]
-        for index, image in enumerate(images_test[mass:mass + loaders]):
-            threads.append(TestImage(image, images_none_test, index))
+        threads: list[threading.Thread] = []
+        for image, label in images_test[mass:mass + loaders]:
+            threads.append(TestImage(image, label, test_queue))
             threads[-1].start()
         
         for thread in threads:
             thread.join()
         
-        for index, image in enumerate(images_none_test):
-            if image == -1: continue
-            if not image:
+        while not test_queue.empty():
+            image, label, flag = test_queue.get()
+            if flag:
+                ok += 1
+                images.append(image)
+                labels.append(label)
+            else:
                 none += 1
-                checker_log(ok, none)
-                continue
-            images.append(images_test[mass + index])
-            labels.append(labels_test[mass + index])
-            ok += 1
+            
             checker_log(ok, none)
     
     print()
     return images, labels, categories
 
 class TestImage(threading.Thread):
-    def __init__(self, image: str, arr: list, index: int):
+    def __init__(self, image: Union[str, bytes, bytearray, np.ndarray], label: int, queue: queue.Queue):
         super().__init__()
         self.image = image
-        self.arr = arr
-        self.index = index
+        self.label = label
+        self.queue = queue
     
     def run(self):
         if type(self.image) in (bytes, bytearray):
             image_np = np.frombuffer(self.image, np.uint8)
             test = cv2.imdecode(image_np, cv2.IMREAD_COLOR)
-            self.arr[self.index] = test is not None
         elif type(self.image) is str:
             test = cv2.imread(self.image, cv2.IMREAD_COLOR)
-            self.arr[self.index] = test is not None
         elif type(self.image) is np.ndarray:
             test = cv2.imread(self.image, cv2.IMREAD_COLOR)
-            self.arr[self.index] = test is not None
+        
+        self.queue.put([self.image, self.label, test is not None])
 
 class LoadImage(threading.Thread):
-    def __init__(self, image: str, arr: Union[list, np.ndarray], image_size: int, index: int, resize_method: str, dtype=np.float32):
+    def __init__(self, image: Union[str, bytes, bytearray, np.ndarray], label: int, queue: queue.Queue, image_size: int, resize_method: str):
         super().__init__()
         self.image = image
-        self.arr = arr
+        self.label = label
+        self.queue = queue
         self.image_size = image_size
-        self.index = index
         self.resize_method = resize_method
-        self.dtype = dtype
     
     def _resize(self, image):
         if self.resize_method in ("default", "contain"):
@@ -115,8 +112,10 @@ class LoadImage(threading.Thread):
     def run(self):
         if type(self.image) in (bytes, bytearray):
             image_np = np.frombuffer(self.image, np.uint8)
-            self.arr[self.index] = self._resize(cv2.imdecode(image_np, cv2.IMREAD_COLOR)).astype(self.dtype)
+            image = self._resize(cv2.imdecode(image_np, cv2.IMREAD_COLOR))
         elif type(self.image) is str:
-            self.arr[self.index] = self._resize(cv2.imread(self.image, cv2.IMREAD_COLOR)).astype(self.dtype)
+            image = self._resize(cv2.imread(self.image, cv2.IMREAD_COLOR))
         elif type(self.image) is np.ndarray:
-            self.arr[self.index] = self._resize(self.image).astype(self.dtype)
+            image = self._resize(self.image)
+        
+        self.queue.put([image, self.label])

@@ -1,47 +1,42 @@
-# global user option
-# as comment or blank will be applied default
-# you can copy and set to make indivisual setting for a model
+# User options for train
+# As comment or blank value, will be apply default.
 
-# Data augmentation options
+# Dataloader and augmentation options.
 #flip_vertical: 0.5 # probability. range: 0 - 1.0
 #flip_horizontal: 0.5 # probability. range: 0 - 1.0
-#rotate_degree: 0 # degree
-#zoom: 2 # multiply. range: 1 or over
+#rotate_degree: 90 # degree.
+#zoom: 2 # multiply. range: >= 1
 #translate_vertical: 0.25 # ratio. range: 0 - 1.0
-#translate_horizontal: 0.25 # ratio: range: 0 - 1.0
+#translate_horizontal: 0.25 # ratio. range: 0 - 1.0
 #hsv_h: 0.05 # ratio. range: 0 - 1.0
 #hsv_s: 0.5 # ratio. range: 0 - 1.0
 #hsv_v: 0.5 # ratio. range: 0 - 1.0
 #noise: 0.125 # opacity. range: 0 - 1.0
 #dequality: 50 # ratio. range: 0 - 100
 #crop_ratio: 0.5 # ratio. range: 0 - 1.0
-#color_space: BGR # color space of input image. select from: BGR, RGB, HSV
-#data_length: # manual setting length
-#file_checkers: 128 # threads of file checker
-#loaders: 4 # number of data augment processes
-#subloaders: 2 # number of sub-processes for read image file from storage
-#subdivision: 4 # divide batch size
-#queue_size: 4 # queue size for dataloaders
-#data_type: float32 # select from: float16, float32, float64, float128
-#resize_method: contain # select from: default (same as contain), contain, stretch
-
-# Datasets options
-#train_image: datasets/train # train image path
-#val_image: datasets/val # validation image path
+#color_space: BGR # color space of train/validation images. select from: BGR, RGB, HSV
+#data_length: # data length of train data. as blank, will be apply automatic length
+#file_checkers: 128 # number of file checker threads
+#loaders: 4 # number of dataloaders
+#subdivisions: 4 # number of divide batch size
+#queue_size: 4 # queue size of per dataloader
+#resize_method: contain # resize method. select from: contain, stretch
+#train_image: datasets/train # train images path
+#val_image: datasets/val # validation images path
 
 # Train options
-#checkpoint_path: runs # checkpoint root path
-#checkpoint_name: train # checkpoint name
+#checkpoint_path: runs # a root path of checkpoint
+#checkpoint_name: train # a name of checkpoint
 #optimizer: Adam # optimizer
-#loss: CCE # loss function. select from: CCE (Categorical Cross-Entropy), BCE (Binary Cross-Entropy), MAE (Mean Average Error), MSE (Mean Squared Error), RMSE (Rooted Mean Squared Error)
-#learning_rate: 0.005 # learning rate
+#loss: CCE # loss function. select from: CCE (categorical crossentropy), MSE (mean squared error), MAE (mean average error), RMSE (rooted mean squared error)
+#learning_rate: 0.001 # learning rate
 #batch_size: 256 # batch size
-#image_size: 320 # input image size
+#image_size: 224 # input size
 #epochs: 250 # epochs
 #mixed_precision: mixed_float16 # mixed precision policy. select from: float32, mixed_float16, mixed_bfloat16, etc...
-#warmup_epochs: 5 # increase learning rate until of. 0 or under is disable.
-#warmup_lr: 0.001 # in start learning rate. learning_rate * warmup_lr
-#decay_ratio: 0.1 # in end learning rate. learning_rate * decay_lr
-#decay_start: 200 # start decay since of. 0 or under is disable.
-#save_period: 1 # save weights frequency
-#model: classify-normal.yaml # model path. defaul models are on cfg/models
+#warmup_epochs: 10 # warmup length
+#warmup_lr: 0.001 # learing_rate * warmup_lr (in start)
+#decay_lr: 0.1 # learning_rate * decay_lr (in end)
+#decay_start: 20 # decay start epoch
+#save_period: 0 # frequency of saving weights.
+#model: classify-medium.yaml # model configuration filename

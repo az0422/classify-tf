@@ -8,7 +8,7 @@ import gc
 import queue
 
 import tensorflow as tf
-from tensorflow.keras.utils import PyDataset
+from tensorflow.keras.utils import Sequence
 
 from .utils import load_filelist, resize_contain, resize_stretch
 from .augment import DataAugment
@@ -52,14 +52,14 @@ class Loader(multiprocessing.Process):
                     self.cfg["image_size"],
                     self.cfg["image_size"],
                     3,
-                ], dtype=self.cfg["data_type"]
+                ], dtype=np.float32
             )
             
             labels = np.zeros(
                 [
                     self.batch_size,
                     self.classes
-                ]
+                ], dtype=np.uint8
             )
 
             for i, (image, label) in enumerate(images_list):
@@ -81,7 +81,7 @@ class Loader(multiprocessing.Process):
     def getData(self):
         return self.queue.get()
 
-class DataLoader(PyDataset):
+class DataLoader(Sequence):
     def __init__(self, images: list, cfg: dict, augment_flag=True):
         super().__init__()
         random.seed(time.time())

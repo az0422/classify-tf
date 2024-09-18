@@ -12,12 +12,15 @@ from .modules import (
     layers_dict,
     Conv,
     ConvTranspose,
+    Conv1d,
     Shortcut,
     Concat,
+    Reshape,
     ResNet,
     CSPResNet,
     SPPF,
     Classify,
+    Classify1d
 )
 
 def quantize_channels(channels):
@@ -41,6 +44,7 @@ def parse_model(cfg, classes):
     if activation is not None:
         Conv.default_act[0] = activation
         ConvTranspose.default_act[0] = activation
+        Conv1d.default_act[0] = activation
     
     layers_list = [layers.Input(shape=(None, None, 3))]
     channels = [3]
@@ -75,6 +79,7 @@ def parse_model(cfg, classes):
         if layer in (
             Conv,
             ConvTranspose,
+            Conv1d,
             ResNet,
             CSPResNet,
             SPPF,
@@ -97,14 +102,22 @@ def parse_model(cfg, classes):
         elif layer is Shortcut:
             channels.append(channels[index_[0]])
         
-        if layer is Concat:
+        elif layer is Concat:
             ch = [channels[i] for i in index_]
             channels.append(sum(ch))
         
-        elif layer is Classify:
+        elif layer in (Classify, Classify1d):
             ch = channels[index_]
             args.insert(0, ch)
             args[1] = classes
+        
+        elif layer is Reshape:
+            ch = args[0][-1]
+            channels.append(ch)
+        
+        else:
+            ch = channels[index_]
+            channels.append(ch)
         
         print("%24s%12s%40s%40s" % (index, depth, layer_name, args))
         
