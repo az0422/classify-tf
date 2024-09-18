@@ -35,7 +35,7 @@ epochs: 250
 mixed_precision: mixed_float16
 warmup_epochs: 10
 warmup_lr: 0.001 # learing_rate * warmup_lr (in start)
-scheduler_type: cos
+scheduler_type: cosine
 decay_lr: 0.01 # learning_rate * decay_ratio (in end)
 decay_start: 20
 save_period: 0

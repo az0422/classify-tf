@@ -74,7 +74,7 @@ class Scheduler(Callback):
             decay_epoch = epoch - self.decay_start
             if self.scheduler_type == "linear":
                 lr = self.learning_rate - (self.learning_rate - self.learning_rate * self.decay_lr) / self.decay_epochs * decay_epoch
-            elif self.scheduler_type == "cos":
+            elif self.scheduler_type in ("cos", "cosine"):
                 lr = (math.cos(math.pi / self.decay_epochs * decay_epoch) + 1) / 2 * (self.learning_rate - self.learning_rate * self.decay_lr) + self.learning_rate * self.decay_lr
             else:
                 lr = self.learning_rate

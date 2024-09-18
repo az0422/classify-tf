@@ -26,7 +26,7 @@ from .modules import (
 def quantize_channels(channels):
     return math.ceil(channels / 8) * 8
 
-def parse_model(cfg, classes):
+def parse_model(cfg, classes, image_size=None):
     assert os.path.isfile(cfg) or os.path.isfile(os.path.join("cfg/models", cfg)), "Configration file of model was not found."
 
     if not os.path.isfile(cfg):
@@ -46,7 +46,7 @@ def parse_model(cfg, classes):
         ConvTranspose.default_act[0] = activation
         Conv1d.default_act[0] = activation
     
-    layers_list = [layers.Input(shape=(None, None, 3))]
+    layers_list = [layers.Input(shape=(image_size, image_size, 3))]
     channels = [3]
     layer_info = []
 
@@ -138,8 +138,8 @@ def parse_model(cfg, classes):
     return layers_list, layer_info, cfg_str
 
 class ClassifyModel(Model):
-    def __init__(self, cfg, classes, *args, **kwargs):
-        self.layers_list, self.layer_info, self.cfg = parse_model(cfg, classes)
+    def __init__(self, cfg, classes, image_size=None, *args, **kwargs):
+        self.layers_list, self.layer_info, self.cfg = parse_model(cfg, classes, image_size)
 
         super().__init__(self.layers_list[0], self.layers_list[-1], **kwargs)
 

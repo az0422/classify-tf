@@ -99,9 +99,10 @@ def train(model, dataloader, dataloaderval, cfg):
                 learning_rate=cfg["learning_rate"],
                 warmup_lr=cfg["warmup_lr"],
                 warmup_epochs=cfg["warmup_epochs"],
+                scheduler_type=cfg["scheduler_type"],
                 decay_lr=cfg["decay_lr"],
                 decay_start=cfg["decay_start"],
-                decay_epochs=cfg["epochs"] - cfg["decay_start"]
+                decay_epochs=cfg["epochs"] - cfg["decay_start"],
             ),
             GarbageCollect()
         ],
