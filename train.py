@@ -28,7 +28,7 @@ def make_checkpoint_path(cfg):
     print("checkpoint path:", checkpoint_path)
     return checkpoint_path
 
-def create_model(cfg):
+def create_model(cfg, checkpoint):
     optimizer_dict = {"adam": Adam, "adadelta": Adadelta, "adagrad": Adagrad, "adamw": AdamW, "adamax": Adamax,
                       "ftrl": Ftrl, "lion": Lion, "nadam": Nadam, "rmsprop": RMSprop, "sgd": SGD}
     loss_dict = {"mse": MSE, "rmse": RMSE, "mae": MAE, "cce": CategoricalCrossentropy}
@@ -42,8 +42,14 @@ def create_model(cfg):
     loss = loss_dict[cfg["loss"].lower()]
     learning_rate = cfg["learning_rate"]
 
-    model = ClassifyModel(cfg["model"], classes)
-    model.build([None, None, None, 3])
+    model_cfg = None
+    if checkpoint is None:
+        model_cfg = cfg["model"]
+    else:
+        model_cfg = os.path.join(checkpoint, "model.yaml")
+
+    model = ClassifyModel(model_cfg, classes, cfg["image_size"])
+    model.build([None, cfg["image_size"], cfg["image_size"], 3])
     model.compile(optimizer=optimizer(learning_rate=learning_rate),
                   loss=loss(),
                   metrics=['accuracy'])
@@ -52,6 +58,34 @@ def create_model(cfg):
         f.write(model.getConfig())
 
     return model, classes
+
+def load_weights(model, checkpoint, epoch):
+    weights_file = os.path.join(checkpoint, "weights")
+    weights_suffix = ".weights.h5" if tf.__version__ >= "2.16.0" else ".ckpt"
+
+    if epoch in ("last", "best"):
+        weights_file = os.path.join(weights_file, epoch) + weights_suffix
+    else:
+        weights_file = os.path.join(weights_file, "%016d" % (int(epoch)))
+    
+    model.load_weights(weights_file)
+
+    last_epoch = 0
+    train_log = os.path.join(checkpoint, "train.log")
+
+    with open(train_log, "r") as f:
+        t = f.read().split("\n")
+        last_epoch = len(t)
+
+        if t[-1] == "":
+            last_epoch -= 1
+    
+    if epoch == "best":
+        last_epoch = 0
+    elif epoch != "last":
+        last_epoch = int(epoch)
+
+    return model, last_epoch
 
 def dump_image(images, labels, path, name):
     images = images * 255.
@@ -87,11 +121,12 @@ def create_dataloaders(cfg):
 
     return dataloader, dataloaderval
 
-def train(model, dataloader, dataloaderval, cfg):
+def train(model, dataloader, dataloaderval, cfg, epoch):
     model.fit(
         dataloader,
         batch_size=cfg["batch_size"],
         epochs=cfg["epochs"],
+        initial_epoch=epoch,
         validation_data=dataloaderval,
         callbacks=[
             SaveCheckpoint(cfg["path"], cfg["save_period"]),
@@ -108,7 +143,7 @@ def train(model, dataloader, dataloaderval, cfg):
         ],
     )
 
-def main(cfg):
+def main(cfg, checkpoint, epoch, resume):
     gpus = tf.config.list_physical_devices('GPU')
     if gpus:
         try:
@@ -129,12 +164,16 @@ def main(cfg):
 
     tf.keras.mixed_precision.set_global_policy(cfg["mixed_precision"])
 
-    checkpoint_path = make_checkpoint_path(cfg)
-    cfg["path"] = checkpoint_path
+    if not resume:
+        checkpoint_path = make_checkpoint_path(cfg)
+        cfg["path"] = checkpoint_path
 
     print("create model")
     with gpu_process.scope():
-        model, classes = create_model(cfg)
+        model, classes = create_model(cfg, checkpoint)
+
+        if checkpoint is not None:
+            model, last_epoch = load_weights(model, checkpoint, epoch)
     
     cfg["classes"] = classes
     yaml.dump(cfg, open(os.path.join(checkpoint_path, "cfg.yaml"), "w"))
@@ -143,7 +182,7 @@ def main(cfg):
     dataloader, dataloaderval = create_dataloaders(cfg)
 
     print("train start")
-    train(model, dataloader, dataloaderval, cfg)
+    train(model, dataloader, dataloaderval, cfg, last_epoch)
 
     dataloader.stopAugment()
     dataloaderval.stopAugment()
@@ -152,12 +191,24 @@ if __name__ == "__main__":
     cfg = parse_cfg("cfg/settings.yaml")
 
     local_cfg = None
+    checkpoint = None
+    epoch = "best"
+    resume = False
+
     for arg in sys.argv:
         if arg.startswith("cfg"):
             local_cfg = arg.split("=", maxsplit=1)[1]
-            break
+        elif arg.startswith("checkpoint"):
+            checkpoint = arg.split("=", maxsplit=1)[1]
+        elif arg.startswith("resume"):
+            resume = True
+            epoch = "last"
+        elif arg.startswith("epoch") and epoch == "best":
+            epoch = arg.split("=", maxsplit=1)[1]
     
-    if local_cfg is not None:
+    if resume:
+        cfg = parse_cfg(os.path.join(checkpoint, "cfg.yaml"))
+    elif local_cfg is not None:
         cfg = apply_local_cfg(cfg, local_cfg)
     
-    main(cfg)
+    main(cfg, checkpoint, epoch, resume)

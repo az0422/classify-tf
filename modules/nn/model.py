@@ -8,6 +8,8 @@ import tensorflow as tf
 from tensorflow.keras import layers
 from tensorflow.keras.models import Model, Sequential
 
+from .utils import calc_flops
+
 from .modules import (
     layers_dict,
     Conv,
@@ -141,9 +143,10 @@ class ClassifyModel(Model):
     def __init__(self, cfg, classes, image_size=None, *args, **kwargs):
         self.layers_list, self.layer_info, self.cfg = parse_model(cfg, classes, image_size)
 
-        super().__init__(self.layers_list[0], self.layers_list[-1], **kwargs)
+        super().__init__(self.layers_list[0], self.layers_list[-1], *args, **kwargs)
 
-        print("Total parameters:", self.count_params())
+        print("Total parameters: %.4f M" % (self.count_params() / 1e+6))
+        print("Total FLOPs: %.4f GFLOPs per image" % (calc_flops(self) / 1e+9))
 
     def getConfig(self):
         return self.cfg

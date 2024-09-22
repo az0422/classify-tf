@@ -3,4 +3,5 @@ runs/
 train/
 dataloader-test/
 dataloader.py
+test.py
 .venv/

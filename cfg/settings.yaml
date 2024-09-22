@@ -1,6 +1,7 @@
 # Defualt settings.
 # Do NOT change this file.
 
+crop_ratio: 0.5
 flip_vertical: 0.5
 flip_horizontal: 0.5
 rotate_degree: 90
@@ -11,8 +12,8 @@ hsv_h: 0.05
 hsv_s: 0.5
 hsv_v: 0.5
 noise: 0.125
-dequality: 50
-crop_ratio: 0.5
+dequality: 20
+resize_ratio: 0.5
 color_space: BGR
 data_length:
 file_checkers: 128
@@ -28,7 +29,7 @@ checkpoint_path: runs
 checkpoint_name: train
 optimizer: Adam
 loss: CCE
-learning_rate: 0.0025
+learning_rate: 0.001
 batch_size: 256
 image_size: 224 # input size
 epochs: 250

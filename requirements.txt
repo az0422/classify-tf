@@ -2,3 +2,7 @@ tensorflow
 opencv-python
 pyyaml
 matplotlib
+tf2onnx
+onnx
+onnxruntime
+onnx-tool
