@@ -72,35 +72,29 @@ class DataAugment(multiprocessing.Process):
         hsv[hsv < 0.] = 0.
 
         hsv_mul = np.random.rand(3) * hsv * 2 - hsv + 1.
- 
+
+        image = cv2.cvtColor(image.astype(np.uint8), cv2.COLOR_BGR2HSV).astype(np.float32)
         image[..., :] *= hsv_mul
         image[..., 0] = image[..., 0] % 180
         image = np.clip(image, 0, 255.)
+        image = cv2.cvtColor(image.astype(np.uint8), cv2.COLOR_HSV2BGR).astype(np.float32)
 
         return image
     
     def _dequality(self, image):
-        height, width, _ = image.shape
-        r_width, r_height = ((1 - np.random.rand(2) * self.cfg["resize_ratio"]) * np.array([width, height])).astype(np.uint32)
-        opacity = np.random.rand() * self.cfg["noise"]
-        noise = np.random.rand(*image.shape) * 255.
-        quality = int(np.random.rand() * (100 - self.cfg["dequality"]))
-        
+        noise = (np.random.rand(*image.shape) * 255.).astype(np.float32)
+        opacity = 1 - np.random.rand() * self.cfg["noise"]
+        dequality = 1 - np.random.rand() * self.cfg["dequality"]
+
         image = image * (1 - opacity) + noise * opacity
-        image = np.clip(image, 0, 255.)
 
-        image = cv2.resize(image, [r_width, r_height])
+        _, image = cv2.imencode(".jpg", image.astype(np.uint8), [cv2.IMWRITE_JPEG_QUALITY, round(dequality * 10)])
+        image = cv2.imdecode(image, cv2.IMREAD_COLOR).astype(np.float32)
 
-        _, encode = cv2.imencode(".jpeg", image.astype(np.uint8), [cv2.IMWRITE_JPEG_QUALITY, quality])
-        image = cv2.imdecode(encode, cv2.IMREAD_COLOR)
-
-        image = cv2.resize(image, [width, height])
-        
-        return image.astype(np.float32)
+        return image
     
     def run(self):
-        gc_count = 0
-        while not self.stop:
+        while True:
             taked_indices = [random.randrange(0, len(self.images) - 1) for _ in range(self.batch_size)]
             images = np.zeros(
                 [
@@ -121,7 +115,7 @@ class DataAugment(multiprocessing.Process):
                 image, label = self.images[taked_index]
                 image = cv2.imread(image, cv2.IMREAD_COLOR)
                 
-                image = self._resize(image)
+                image = self._resize(image).astype(np.float32)
                 image = self._flip(image)
                 image = self._translate(image)
                 image = self._hsv(image)
@@ -134,22 +128,13 @@ class DataAugment(multiprocessing.Process):
 
                 elif self.cfg["color_space"].lower() == "hsv":
                     image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+                
+                image = image.astype(np.float32)
 
                 images[index] = image / 255.
                 labels[index][label] = 1
 
             self.queue.put([images, labels])
-
-            del (
-                images,
-                labels,
-            )
-
-            gc_count = (gc_count + 1) % len(self.images) // self.batch_size
-
-            if gc_count == len(self.images) // self.batch_size - 1:
-                gc.collect()
-
         
     def getData(self):
         return self.queue.get()

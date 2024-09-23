@@ -20,7 +20,6 @@
 
 # Quality adjustment options
 #noise: 0.125 # opacity. range: (none)  0 - 1.0 (only noise)
-#dequality: 50 # ratio. range: (none) 0 - 100 (loss all)
 #resize: 0.25 # ratio. range: (none) 0 - 1.0 (disappear)
 
 # Color space adjustment

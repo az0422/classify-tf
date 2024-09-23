@@ -168,12 +168,16 @@ def main(cfg, checkpoint, epoch, resume):
         checkpoint_path = make_checkpoint_path(cfg)
         cfg["path"] = checkpoint_path
 
+    last_epoch = 0
     print("create model")
     with gpu_process.scope():
         model, classes = create_model(cfg, checkpoint)
 
         if checkpoint is not None:
             model, last_epoch = load_weights(model, checkpoint, epoch)
+    
+    if not resume:
+        last_epoch = 0
     
     cfg["classes"] = classes
     yaml.dump(cfg, open(os.path.join(checkpoint_path, "cfg.yaml"), "w"))

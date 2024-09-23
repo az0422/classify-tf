@@ -148,12 +148,5 @@ class DataLoader(Sequence):
 
         images_tf = tf.constant(images_np)
         labels_tf = tf.constant(labels_np)
-
-        del (
-            images,
-            labels,
-            images_np,
-            labels_np,
-        )
         
         return images_tf, labels_tf

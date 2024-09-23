@@ -5,3 +5,6 @@ dataloader-test/
 dataloader-test.py
 test.py
 .venv/
+*.tar
+*.tar.gz
+*.tgz

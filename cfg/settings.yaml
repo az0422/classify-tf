@@ -12,8 +12,7 @@ hsv_h: 0.05
 hsv_s: 0.5
 hsv_v: 0.5
 noise: 0.125
-dequality: 20
-resize_ratio: 0.5
+dequality: 0.2
 color_space: BGR
 data_length:
 file_checkers: 128
