@@ -5,4 +5,3 @@ matplotlib
 tf2onnx
 onnx
 onnxruntime
-onnx-tool

@@ -8,7 +8,7 @@ class Classify(Layer):
     def __init__(self, in_channels, classes, act=tf.nn.softmax):
         super().__init__()
         
-        self.conv = Conv2D(classes, 3, 1, activation=act)
+        self.conv = Conv2D(classes, 1, 1, activation=act)
         self.gap = GlobalAveragePooling2D(dtype="float32")
     
     def call(self, x):

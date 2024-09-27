@@ -5,8 +5,6 @@ if "TF_CPP_MIN_LOG_LEVEL" not in os.environ.keys():
     os.environ["TF_CPP_MIN_LOG_LEVEL"] = "4"
 
 import tensorflow as tf
-import tf2onnx
-import onnx_tool
 
 from modules.nn.model import ClassifyModel
 from modules.utils import parse_cfg
@@ -20,7 +18,6 @@ def load_cfg(path):
 def load_model(path, cfg, image_size):
     cfg_path = os.path.join(path, "model.yaml")
     model = ClassifyModel(cfg_path, cfg["classes"], image_size)
-    model.build([None, image_size, image_size, 3])
 
     return model
 
@@ -43,12 +40,7 @@ def make_dirs(path):
 
 def conv_saved_model(path, model):
     export = os.path.join(path, "saved_model")
-    
-    @tf.function(input_signature=[tf.TensorSpec(shape=model.inputs[0].shape, dtype=model.inputs[0].dtype)])
-    def serve_model(input_tensor):
-        return model(input_tensor)
-    
-    tf.saved_model.save(model, export, signatures={"serve": serve_model})
+    tf.saved_model.save(model, export)
 
 def conv_tflite(path, model):
     export_fp32 = os.path.join(path, "tflite_fp32.tflite")
@@ -67,15 +59,6 @@ def conv_tflite(path, model):
     with open(export_fp16, "bw") as f:
         f.write(tflite_model_fp16)
 
-def conv_onnx(path, model):
-    export_onnx = os.path.join(path, "onnx.onnx")
-    spec = [tf.TensorSpec(model.inputs[0].shape[1:], model.inputs[0].dtype)]
-
-    model_proto, _ = tf2onnx.convert.from_keras(model, input_signature=spec, opset=17, output_path=export_onnx)
-
-    a = onnx_tool.model_profile(export_onnx, None, None)
-    print(a)
-
 def main(path, epoch, image_size):
     print("Load model...")
     cfg = load_cfg(path)
@@ -90,9 +73,6 @@ def main(path, epoch, image_size):
 
     print("Convert TFLite...")
     conv_tflite(export, model)
-
-    print("Convert ONNX...")
-    conv_onnx(export, model)
 
     print("Finished.\nSaved at", export)
 
