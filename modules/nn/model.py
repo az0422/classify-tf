@@ -14,7 +14,6 @@ from .modules import (
     layers_dict,
     Conv,
     ConvTranspose,
-    Conv1d,
     Shortcut,
     Concat,
     Reshape,
@@ -22,7 +21,6 @@ from .modules import (
     CSPResNet,
     SPPF,
     Classify,
-    Classify1d
 )
 
 def quantize_channels(channels):
@@ -46,17 +44,16 @@ def parse_model(cfg, classes, image_size=None):
     if activation is not None:
         Conv.default_act[0] = activation
         ConvTranspose.default_act[0] = activation
-        Conv1d.default_act[0] = activation
     
     layers_list = [layers.Input(shape=(image_size, image_size, 3))]
     channels = [3]
     layer_info = []
 
-    print("=" * (24 + 12 + 40 + 40))
-    print("%24s%12s%40s%40s" % ("index", "depth", "layer_name", "args"))
-    print("-" * (24 + 12 + 40 + 40))
+    print("=" * (1 + 8 + 24 + 12 + 40 + 40))
+    print(" %-8s%24s%12s%40s%40s" % ("index", "from", "depth", "layer_name", "args"))
+    print("-" * (1 + 8 + 24 + 12 + 40 + 40))
 
-    for index, depth, layer_name, args in cfg["backbone"] + cfg["head"]:
+    for i_, (index, depth, layer_name, args) in enumerate(cfg["backbone"] + cfg["head"]):
         if layer_name.startswith("layers."):
             layer = eval(layer_name)
             layer_name = "tf.keras." + layer_name
@@ -81,7 +78,6 @@ def parse_model(cfg, classes, image_size=None):
         if layer in (
             Conv,
             ConvTranspose,
-            Conv1d,
             ResNet,
             CSPResNet,
             SPPF,
@@ -108,20 +104,21 @@ def parse_model(cfg, classes, image_size=None):
             ch = [channels[i] for i in index_]
             channels.append(sum(ch))
         
-        elif layer in (Classify, Classify1d):
-            ch = channels[index_]
-            args.insert(0, ch)
-            args[1] = classes
-        
         elif layer is Reshape:
             ch = args[0][-1]
             channels.append(ch)
+
+        elif layer in (Classify,):
+            ch = channels[index_]
+            args.insert(0, ch)
+            args[1] = classes
+            channels.append(classes)
         
         else:
             ch = channels[index_]
             channels.append(ch)
         
-        print("%24s%12s%40s%40s" % (index, depth, layer_name, args))
+        print(" %-8s%24s%12s%40s%40s" % (i_, index, depth, layer_name, args))
         
         if depth != 1:
             m = Sequential([layer(*args) for _ in range(depth)])
@@ -135,15 +132,15 @@ def parse_model(cfg, classes, image_size=None):
 
         layer_info.append([index, depth, layer_name, args])
     
-    print("-" * (24 + 12 + 40 + 40))
+    print("-" * (1 + 8 + 24 + 12 + 40 + 40))
 
     return layers_list, layer_info, cfg_str
 
 class ClassifyModel(Model):
-    def __init__(self, cfg, classes, image_size=None, *args, **kwargs):
+    def __init__(self, cfg, classes, image_size=None, name="classify", *args, **kwargs):
         self.layers_list, self.layer_info, self.cfg = parse_model(cfg, classes, image_size)
 
-        super().__init__(self.layers_list[0], self.layers_list[-1], *args, **kwargs)
+        super(ClassifyModel, self).__init__(self.layers_list[0], self.layers_list[-1], name=name, *args, **kwargs)
 
         print("Total parameters: %.4f M" % (self.count_params() / 1e+6))
         print("Total FLOPs: %.4f GFLOPs per image" % (calc_flops(self) / 1e+9))

@@ -17,7 +17,7 @@ class SaveCheckpoint(Callback):
         self.weights_last = os.path.join(weights_path, "last") + suffix
         self.log = os.path.join(path, "train.csv")
 
-        self.best_accuracy = 0
+        self.best_loss = 1e+100
 
         if not os.path.isdir(weights_path):
             os.makedirs(weights_path)
@@ -25,9 +25,9 @@ class SaveCheckpoint(Callback):
     def on_epoch_end(self, epoch, logs=None):
         self.model.save_weights(self.weights_last)
 
-        accuracy = logs["val_accuracy"]
-        if self.best_accuracy <= accuracy:
-            self.best_accuracy = accuracy
+        loss = logs["val_loss"]
+        if self.best_loss >= loss:
+            self.best_loss = loss
             self.model.save_weights(self.weights_best)
 
         if self.save_period > 0 and epoch % self.save_period == 0:
@@ -92,3 +92,19 @@ class GarbageCollect(Callback):
     
     def on_epoch_end(self, *args, **kwargs):
         gc.collect()
+
+class InitializeStop(Callback):
+    def __init__(self, threshold_acc=0.8, patience=3):
+        super().__init__()
+        self.threshold_acc = threshold_acc
+        self.count = 0
+        self.patience = patience
+    
+    def on_epoch_end(self, epoch, logs=None):
+        if self.threshold_acc < logs["val_accuracy"]:
+            self.count += 1
+        else:
+            self.count = 0
+        
+        if self.patience <= self.count:
+            self.model.stop_training = True

@@ -4,22 +4,24 @@
 # DATALOADER AND AUGMENTATION OPTIONS
 # Image size option 
 #crop_ratio: 0.5 # ratio. range: (all area) 0 - 1.0 (no area)
+#crop_method: blank # method. select from: blank, resize
 
 # Image translate options
 #flip_vertical: 0.5 # probability. range: (no) 0 - 1.0 (all)
 #flip_horizontal: 0.5 # probability. range: (no) 0 - 1.0 (all)
-#rotate_degree: 90 # degree.
+#rotate_degree: 0 # degree.
 #zoom: 2 # multiply. range: >= 1 (1: no zoom)
 #translate_vertical: 0.25 # ratio. range: (no) 0 - 1.0 (whole height size)
 #translate_horizontal: 0.25 # ratio. range: (no) 0 - 1.0 (whole width size)
 
 # Color adjustment options
 #hsv_h: 0.05 # ratio. range: (no change) 0 - 1.0 (all change)
-#hsv_s: 0.5 # ratio. range: (no change) 0 - 1.0 (all change)
-#hsv_v: 0.5 # ratio. range: (no change) 0 - 1.0 (all change)
+#hsv_s: 0.15 # ratio. range: (no change) 0 - 1.0 (all change)
+#hsv_v: 0.15 # ratio. range: (no change) 0 - 1.0 (all change)
 
 # Quality adjustment options
 #noise: 0.125 # opacity. range: (none)  0 - 1.0 (only noise)
+#dequality: 50 # ratio. range: (none) 0 - 100 (loss all)
 #resize: 0.25 # ratio. range: (none) 0 - 1.0 (disappear)
 
 # Color space adjustment
@@ -46,8 +48,10 @@
 # Training options
 #optimizer: Adam # optimizer
 #loss: CCE # loss function. select from: CCE (categorical crossentropy), MSE (mean squared error), MAE (mean average error), RMSE (rooted mean squared error)
+#devices: all
 #learning_rate: 0.001 # learning rate
 #batch_size: 256 # batch size
+#patience: 10 # patience for epochs for early stopping
 #image_size: 224 # input size
 #epochs: 250 # epochs
 #mixed_precision: mixed_float16 # mixed precision policy. select from: float32, mixed_float16, mixed_bfloat16, etc...
@@ -55,6 +59,7 @@
 # Learning rate scheduler options
 #warmup_epochs: 10 # warmup length
 #warmup_lr: 0.001 # learing_rate * warmup_lr (in start)
+#scheduler_type: cosine
 #decay_lr: 0.1 # learning_rate * decay_lr (in end)
 #decay_start: 20 # decay start epoch
 

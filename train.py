@@ -200,7 +200,7 @@ if __name__ == "__main__":
     resume = False
 
     for arg in sys.argv:
-        if arg.startswith("cfg"):
+        if arg.startswith("option"):
             local_cfg = arg.split("=", maxsplit=1)[1]
         elif arg.startswith("checkpoint"):
             checkpoint = arg.split("=", maxsplit=1)[1]

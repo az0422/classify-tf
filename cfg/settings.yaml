@@ -2,24 +2,26 @@
 # Do NOT change this file.
 
 crop_ratio: 0.5
+crop_method: blank
 flip_vertical: 0.5
 flip_horizontal: 0.5
-rotate_degree: 90
+rotate_degree: 0
 zoom: 2
 translate_vertical: 0.25
 translate_horizontal: 0.25
 hsv_h: 0.05
-hsv_s: 0.5
-hsv_v: 0.5
+hsv_s: 0.15
+hsv_v: 0.15
 noise: 0.125
 dequality: 0.2
+resize_ratio: 0.5
 color_space: BGR
 data_length:
 file_checkers: 128
 loaders: 4
 subdivisions: 4
 queue_size: 4
-resize_method: contain
+resize_method: stretch
 train_image: datasets/train
 val_image: datasets/val
 user_option: option.yaml
@@ -28,10 +30,15 @@ checkpoint_path: runs
 checkpoint_name: train
 optimizer: Adam
 loss: CCE
+mode: embed
 learning_rate: 0.001
 batch_size: 256
 image_size: 224 # input size
+init_epochs: 10
+init_accuracy_threshold: 0.9
+init_accuracy_patience: 3
 epochs: 250
+patience: 30
 mixed_precision: mixed_float16
 warmup_epochs: 10
 warmup_lr: 0.001 # learing_rate * warmup_lr (in start)

@@ -32,6 +32,15 @@ class Loader(multiprocessing.Process):
             return resize_stretch(image, self.cfg["image_size"])
         raise Exception("invalid resize method %s" % self.cfg["resize_method"])
     
+    def _flip(self, image):
+        if np.random.rand() < self.cfg["flip_vertical"]:
+            image = image[::-1]
+        
+        if np.random.rand() < self.cfg["flip_horizontal"]:
+            image = image[:, ::-1]
+        
+        return image
+    
     def run(self):
         index = 0
 
@@ -64,11 +73,14 @@ class Loader(multiprocessing.Process):
 
             for i, (image, label) in enumerate(images_list):
                 image = cv2.imread(image, cv2.IMREAD_COLOR)
+                image = self._flip(image)
+
+                image = self._resize(image)
 
                 if self.color_space is not None:
                     image = cv2.cvtColor(image, self.color_space)
                 
-                images[i] = self._resize(image)
+                images[i] = image
                 labels[i][label] = 1
             
             self.queue.put([images / 255., labels])
@@ -85,6 +97,12 @@ class DataLoader(Sequence):
     def __init__(self, images: list, cfg: dict, augment_flag=True):
         super().__init__()
         random.seed(time.time())
+
+        if multiprocessing.parent_process() is not None:
+            tf.config.set_visible_devices([], "GPU")
+            cpus = tf.config.list_physical_devices("CPU")
+            tf.config.set_visible_devices(cpus, "CPU")
+
         self.cfg = cfg
         self.augment_flag = augment_flag
         images, labels, classes_name = load_filelist(images, self.cfg["file_checkers"])
@@ -112,6 +130,7 @@ class DataLoader(Sequence):
         else:
             self.subdivisions = 2
             length = len(images) // self.subdivisions
+            random.shuffle(self.images)
             self.augments = [
                 Loader(
                     self.images[i * length:(i + 1) * length],
@@ -148,5 +167,12 @@ class DataLoader(Sequence):
 
         images_tf = tf.constant(images_np)
         labels_tf = tf.constant(labels_np)
+
+        del (
+            images,
+            labels,
+            images_np,
+            labels_np,
+        )
         
         return images_tf, labels_tf

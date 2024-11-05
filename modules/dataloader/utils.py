@@ -7,7 +7,7 @@ import numpy as np
 import threading
 
 def resize_stretch(image: np.ndarray, target_size=640):
-    return cv2.resize(image, (target_size, target_size))
+    return cv2.resize(image, (target_size, target_size), interpolation=cv2.INTER_NEAREST)
 
 def resize_contain(image: np.ndarray, target_size=640):
     height, width, _ = image.shape
@@ -15,7 +15,7 @@ def resize_contain(image: np.ndarray, target_size=640):
     scale = target_size / max(height, width)
     scaled_width, scaled_height = int(width * scale), int(height * scale)
 
-    image = cv2.resize(image, (scaled_width, scaled_height))
+    image = cv2.resize(image, (scaled_width, scaled_height), interpolation=cv2.INTER_NEAREST)
 
     pad_width = target_size - scaled_width
     pad_height = target_size - scaled_height

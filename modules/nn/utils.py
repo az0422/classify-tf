@@ -33,7 +33,7 @@ def calc_flops(model):
         elif op.type in ("Conv1D", "Conv2D", "Conv3D"):
             total_flops += np.prod([2, *identity, *output[:-1]], dtype=np.int64)
         
-        elif op.type in ("AddV2", "Mul", "Sub", "Div", "Mean"):
+        elif op.type in ("AddV2", "Mul", "Sub", "Div", "Mean", "Maximum", "Square", "Sum"):
             total_flops += np.prod(output, dtype=np.int64)
         
         elif op.type in ("Rsqrt",):
@@ -44,5 +44,8 @@ def calc_flops(model):
         
         elif op.type in ("Cast",):
             total_flops += np.prod(output, dtype=np.int64)
+        
+        elif op.type in ("MatMul",):
+            total_flops += np.prod([2, *output], dtype=np.int64)
     
     return total_flops

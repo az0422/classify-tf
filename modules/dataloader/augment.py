@@ -2,10 +2,8 @@ import cv2
 import numpy as np
 import random
 import multiprocessing
-import queue
-import gc
 
-from .utils import LoadImage, resize_contain, resize_stretch
+from .utils import resize_contain, resize_stretch
 
 class DataAugment(multiprocessing.Process):
     def __init__(self, seed, images, classes, batch_size, cfg):
@@ -39,30 +37,38 @@ class DataAugment(multiprocessing.Process):
     
     def _crop(self, image):
         height, width, _ = image.shape
+        
+        random_ratio = self.cfg["crop_ratio"] + (1 - self.cfg["crop_ratio"]) * np.random.rand(2)
 
-        crop_width, crop_height = ((1 - np.random.rand(2) * self.cfg["crop_ratio"]) * [width, height]).astype(np.int32)
-        padding = [width - crop_width, height - crop_height]
-        offset_x, offset_y = (np.random.rand(2) * padding).astype(np.int32)
+        crop_width, crop_height = (np.array([width, height]) * random_ratio).astype(np.int32)
 
-        crop_index = np.ones([height, width], dtype=np.bool_)
-        crop_index[offset_y:offset_y + crop_height, offset_x:offset_x + crop_width] = False
-        image[crop_index] = 0
+        pad_x = np.random.randint(0, width - crop_width + 1)
+        pad_y = np.random.randint(0, height - crop_height + 1)
+        
+        if self.cfg["crop_method"] == "blank":
+            flags = np.ones(image.shape[:2], dtype=bool)
+            flags[pad_y:pad_y + crop_height, pad_x:pad_x + crop_width] = False
+            image[flags] = 0.
+        
+        elif self.cfg["crop_method"] == "resize":
+            image_crop = image[pad_y:pad_y + crop_height, pad_x:pad_x + crop_width]
+            image = self._resize(image_crop)
 
         return image
     
     def _translate(self, image):
         height, width, _ = image.shape
-        vertical = (np.random.rand() * self.cfg["translate_vertical"] * 2 - self.cfg["translate_vertical"]) * height
-        horizontal = (np.random.rand() * self.cfg["translate_horizontal"] * 2 - self.cfg["translate_horizontal"]) * width
-        degree = np.random.rand() * self.cfg["rotate_degree"] * 2 - self.cfg["rotate_degree"]
+        vertical = random.uniform(-self.cfg["translate_vertical"], self.cfg["translate_vertical"]) * height
+        horizontal = random.uniform(-self.cfg["translate_horizontal"], self.cfg["translate_horizontal"]) * width
+        degree = random.uniform(-self.cfg["rotate_degree"], self.cfg["rotate_degree"])
 
         zoom = np.random.rand() * (self.cfg["zoom"] - 1) + 1
         if np.random.rand() > 0.5: zoom = 1 / zoom
 
-        matrix = cv2.getRotationMatrix2D((width // 2, height // 2), degree, zoom)
+        matrix = cv2.getRotationMatrix2D((width // 2, height // 2), degree, zoom,)
         matrix[:2, 2] += [horizontal, vertical]
 
-        image = cv2.warpAffine(image, matrix, [width, height])
+        image = cv2.warpAffine(image, matrix, [width, height], borderMode=cv2.BORDER_REPLICATE)
 
         return image
     
@@ -88,8 +94,9 @@ class DataAugment(multiprocessing.Process):
 
         image = image * (1 - opacity) + noise * opacity
 
-        _, image = cv2.imencode(".jpg", image.astype(np.uint8), [cv2.IMWRITE_JPEG_QUALITY, round(dequality * 10)])
-        image = cv2.imdecode(image, cv2.IMREAD_COLOR).astype(np.float32)
+        if dequality > 0:
+            _, image = cv2.imencode(".jpg", image.astype(np.uint8), [cv2.IMWRITE_JPEG_QUALITY, round(dequality * 100)])
+            image = cv2.imdecode(image, cv2.IMREAD_COLOR).astype(np.float32)
 
         return image
     
@@ -116,6 +123,7 @@ class DataAugment(multiprocessing.Process):
                 image = cv2.imread(image, cv2.IMREAD_COLOR)
                 
                 image = self._resize(image).astype(np.float32)
+                image = self._crop(image)
                 image = self._flip(image)
                 image = self._translate(image)
                 image = self._hsv(image)
