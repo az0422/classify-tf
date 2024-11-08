@@ -1,9 +1,11 @@
+This project is alpha version!
+
 # Image Classifier using TensorFlow
 ## How to Use
 ### Commands
- * Train: `python3 train.py cfg=<configuration file (optional)>`
+ * Train: `python3 train.py option=<configuration file (optional)>`
    - For obtaining weights.
-   - The `cfg` argument for indivisual training options.
+   - The `option` argument for indivisual training options.
 
  * Plot graph: `python3 plot.py path=path/to/checkpoint_path/checkpoint_name`
    - For plotting graphs on training.
@@ -13,10 +15,7 @@
    - Export weights to saved_model and TFLite
    - The weights files will be saved onto `path/to/checkpoint_path/checkpoint_name/export`.
 
-### Performances
- | Input size   | Params    | 
-
 ### Configurations
  * option.yaml
  - Global user options.
- - Can copy to create indivisual options for training with `cfg` argument.
+ - Can copy to create indivisual options for training with `option` argument.
