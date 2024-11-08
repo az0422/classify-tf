@@ -17,5 +17,5 @@ This project is alpha version!
 
 ### Configurations
  * option.yaml
- - Global user options.
- - Can copy to create indivisual options for training with `option` argument.
+   - Global user options.
+   - Can copy to create indivisual options for training with `option` argument.
