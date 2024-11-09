@@ -1,5 +1,5 @@
 # User options for train
-# As comment or blank value, will be apply default.
+# As comment or blank value, will be applied default.
 
 # DATALOADER AND AUGMENTATION OPTIONS
 # Image size option 
@@ -48,7 +48,6 @@
 # Training options
 #optimizer: Adam # optimizer
 #loss: CCE # loss function. select from: CCE (categorical crossentropy), MSE (mean squared error), MAE (mean average error), RMSE (rooted mean squared error)
-#devices: all
 #learning_rate: 0.001 # learning rate
 #batch_size: 256 # batch size
 #patience: 10 # patience for epochs for early stopping

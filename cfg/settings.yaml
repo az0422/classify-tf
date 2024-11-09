@@ -28,15 +28,11 @@ user_option: option.yaml
 
 checkpoint_path: runs
 checkpoint_name: train
-optimizer: Adam
+optimizer: SGD
 loss: CCE
-mode: embed
-learning_rate: 0.001
+learning_rate: 0.01
 batch_size: 256
 image_size: 224 # input size
-init_epochs: 10
-init_accuracy_threshold: 0.9
-init_accuracy_patience: 3
 epochs: 250
 patience: 30
 mixed_precision: mixed_float16
