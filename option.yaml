@@ -64,4 +64,4 @@
 
 # Model options
 #save_period: 0 # frequency of saving weights.
-#model: classify-medium.yaml # model configuration filename
+#model: resnet56.yaml # model configuration filename
