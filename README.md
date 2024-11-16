@@ -21,7 +21,15 @@ This project is alpha version!
    - The weights files will be saved onto `path/to/checkpoint_path/checkpoint_name/export`.
 
 ### Configurations
-#### Apply Sequence
+#### Model Configurations
+* ResNet Models
+  - resnet56.yaml
+  - resnet54-eeb2.yaml (experimental)
+* CSPResNet Models
+  - cspresnet56.yaml
+  - cspresnet54-eeb2.yaml (experimental)
+
+#### Option Application Sequence
 1. cfg/settings.yaml (default options)
 2. option.yaml (global user options)
 3. configuration file (copied from option.yaml)
@@ -39,3 +47,10 @@ This project is alpha version!
    - Training options (optimizer, loss, etc.)
    - Learning rate scheduler options
    - Model option
+
+## Experimental Environment
+* CPU: AMD Ryzen 7900 @ 4.5GHz; 90W
+* Memory: DDR5 64GB
+* GPU: RTX 4060 Ti 16GB @ 2.5GHz; 125W x2
+* OS: Ubuntu 24.04 (docker image: nvidia/cuda:12.2.2-cudnn8-devel-ubuntu22.04)
+* Python: CPython 3.10
