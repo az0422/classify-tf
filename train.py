@@ -28,7 +28,7 @@ def make_checkpoint_path(cfg):
     print("checkpoint path:", checkpoint_path)
     return checkpoint_path
 
-def create_model(cfg, checkpoint):
+def model_compile(cfg, model):
     optimizer_dict = {"adam": Adam, "adadelta": Adadelta, "adagrad": Adagrad, "adamw": AdamW, "adamax": Adamax,
                       "ftrl": Ftrl, "lion": Lion, "nadam": Nadam, "rmsprop": RMSprop, "sgd": SGD}
     loss_dict = {"mse": MSE, "rmse": RMSE, "mae": MAE, "cce": CategoricalCrossentropy}
@@ -36,11 +36,19 @@ def create_model(cfg, checkpoint):
     assert cfg["optimizer"].lower() in optimizer_dict.keys(), "Invalid optimizer"
     assert cfg["loss"].lower() in loss_dict.keys(), "Invalid loss function"
 
-    classes = len(os.listdir(cfg["train_image"]))
-
     optimizer = optimizer_dict[cfg["optimizer"].lower()]
     loss = loss_dict[cfg["loss"].lower()]
     learning_rate = cfg["learning_rate"]
+
+    model.compile(
+        optimizer=optimizer(learning_rate=learning_rate),
+        loss=loss(),
+        metrics=['accuracy']
+    )
+
+
+def create_model(cfg, checkpoint, resume):
+    classes = len(os.listdir(cfg["train_image"]))
 
     model_cfg = None
     if checkpoint is None:
@@ -49,17 +57,16 @@ def create_model(cfg, checkpoint):
         model_cfg = os.path.join(checkpoint, "model.yaml")
 
     model = ClassifyModel(model_cfg, classes, cfg["image_size"])
-    model.build([None, cfg["image_size"], cfg["image_size"], 3])
-    model.compile(optimizer=optimizer(learning_rate=learning_rate),
-                  loss=loss(),
-                  metrics=['accuracy'])
+
+    if not resume:
+        model_compile(cfg, model)
     
     with open(os.path.join(cfg["path"], "model.yaml"), "w") as f:
         f.write(model.getConfig())
 
     return model, classes
 
-def load_weights(model, checkpoint, epoch):
+def load_weights(cfg, model, checkpoint, epoch):
     weights_file = os.path.join(checkpoint, "weights")
     weights_suffix = ".weights.h5" if tf.__version__ >= "2.16.0" else ".ckpt"
 
@@ -69,9 +76,11 @@ def load_weights(model, checkpoint, epoch):
         weights_file = os.path.join(weights_file, "%016d" % (int(epoch)))
     
     model.load_weights(weights_file)
+    
+    model_compile(cfg, model)
 
     last_epoch = 0
-    train_log = os.path.join(checkpoint, "train.log")
+    train_log = os.path.join(checkpoint, "train.csv")
 
     with open(train_log, "r") as f:
         t = f.read().split("\n")
@@ -167,14 +176,16 @@ def main(cfg, checkpoint, epoch, resume):
     if not resume:
         checkpoint_path = make_checkpoint_path(cfg)
         cfg["path"] = checkpoint_path
+    else:
+        checkpoint_path = cfg["path"]
 
     last_epoch = 0
     print("create model")
     with gpu_process.scope():
-        model, classes = create_model(cfg, checkpoint)
+        model, classes = create_model(cfg, checkpoint, resume)
 
         if checkpoint is not None:
-            model, last_epoch = load_weights(model, checkpoint, epoch)
+            model, last_epoch = load_weights(cfg, model, checkpoint, epoch)
     
     if not resume:
         last_epoch = 0
@@ -207,6 +218,7 @@ if __name__ == "__main__":
         elif arg.startswith("resume"):
             resume = True
             epoch = "last"
+            checkpoint = arg.split("=", maxsplit=1)[1]
         elif arg.startswith("epoch") and epoch == "best":
             epoch = arg.split("=", maxsplit=1)[1]
     

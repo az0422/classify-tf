@@ -12,11 +12,14 @@ from .utils import calc_flops
 
 from .modules import (
     layers_dict,
+    FC,
     Conv,
     ConvTranspose,
     Shortcut,
     Concat,
     Reshape,
+    EEB,
+    CSPEEB,
     ResNet,
     CSPResNet,
     SPPF,
@@ -44,6 +47,7 @@ def parse_model(cfg, classes, image_size=None):
     if activation is not None:
         Conv.default_act[0] = activation
         ConvTranspose.default_act[0] = activation
+        FC.default_act[0] = activation
     
     layers_list = [layers.Input(shape=(image_size, image_size, 3))]
     channels = [3]
@@ -61,6 +65,8 @@ def parse_model(cfg, classes, image_size=None):
             layer = eval(layer_name)
         else:
             layer = layers_dict[layer_name]
+        
+        depth_ = 0
         depth = math.ceil(depth * depth_multiple)
 
         if type(index) is int:
@@ -76,18 +82,22 @@ def parse_model(cfg, classes, image_size=None):
                 pass
 
         if layer in (
+            FC,
             Conv,
             ConvTranspose,
             ResNet,
             CSPResNet,
+            EEB,
+            CSPEEB,
             SPPF,
         ):
             args.insert(0, channels[index_])
             args[1] = quantize_channels(args[1] * width_multiple)
             channels.append(args[1])
 
-            if layer in (CSPResNet,):
+            if layer in (CSPResNet, CSPEEB):
                 args.insert(2, depth)
+                depth_ = depth
                 depth = 1
         
         elif layer in (
@@ -118,7 +128,7 @@ def parse_model(cfg, classes, image_size=None):
             ch = channels[index_]
             channels.append(ch)
         
-        print(" %-8s%24s%12s%40s%40s" % (i_, index, depth, layer_name, args))
+        print(" %-8s%24s%12s%40s%40s" % (i_, index, depth_ if depth_ else depth, layer_name, args))
         
         if depth != 1:
             m = Sequential([layer(*args) for _ in range(depth)])
