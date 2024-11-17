@@ -46,11 +46,15 @@ This project is alpha version!
 
 ## Model Configurations
 * ResNet Models
-  - resnet56.yaml
-  - resnet54-eeb2.yaml (experimental)
+  - `resnet56.yaml`
+  - `resnet54-eeb2.yaml` (experimental)
+  - `resnet128.yaml`
+  - `resnet124-eeb4.yaml` (experimental)
 * CSPResNet Models
-  - cspresnet56.yaml
-  - cspresnet54-eeb2.yaml (experimental)
+  - `cspresnet56.yaml`
+  - `cspresnet54-eeb2.yaml` (experimental)
+  - `cspresnet128.yaml`
+  - `cspresnet124-eeb4.yaml` (experimental)
 
 ## Experimental Environment
 * CPU: AMD Ryzen 7900 @ 4.5GHz; 90W
