@@ -16,4 +16,4 @@ backbone:
  - [-1, 20, ResNet, [1024]]
 
 head:
- - [-1, 1, Classify, [0]]
+ - [-1, 1, Classify, []]

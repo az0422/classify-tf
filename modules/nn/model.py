@@ -121,7 +121,7 @@ def parse_model(cfg, classes, image_size=None):
         elif layer in (Classify,):
             ch = channels[index_]
             args.insert(0, ch)
-            args[1] = classes
+            args.insert(1, classes)
             channels.append(classes)
         
         else:

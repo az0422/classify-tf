@@ -62,7 +62,7 @@ class DataAugment(multiprocessing.Process):
         horizontal = random.uniform(-self.cfg["translate_horizontal"], self.cfg["translate_horizontal"]) * width
         degree = random.uniform(-self.cfg["rotate_degree"], self.cfg["rotate_degree"])
 
-        zoom = np.random.rand() * (self.cfg["zoom"] - 1) + 1
+        zoom = np.sqrt(np.random.rand() * (self.cfg["zoom"] - 1) + 1)
         if np.random.rand() > 0.5: zoom = 1 / zoom
 
         matrix = cv2.getRotationMatrix2D((width // 2, height // 2), degree, zoom,)

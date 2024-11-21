@@ -4,7 +4,7 @@ import tensorflow as tf
 from tensorflow.keras.layers import Layer, GlobalAveragePooling2D, Dense
 from tensorflow.keras.models import Sequential
 
-from .layers import Reshape, Conv
+from .layers import Conv, FC
 
 class Classify(Layer):
     def __init__(self, in_channels, classes):
@@ -15,10 +15,8 @@ class Classify(Layer):
         self.m = Sequential([
             Conv(in_channels, channels_h, 3, 1),
             GlobalAveragePooling2D(),
-            Reshape([1, 1, channels_h]),
-            Conv(channels_h, channels_h, 1, 1),
-            Conv(channels_h, classes, 1, 1),
-            Reshape([classes]),
+            FC(channels_h, channels_h),
+            FC(channels_h, classes),
             Dense(classes, activation=tf.nn.softmax, dtype=tf.float32)
         ])
     

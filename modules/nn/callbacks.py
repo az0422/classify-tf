@@ -56,7 +56,7 @@ class Scheduler(Callback):
         self.warmup_epochs = warmup_epochs
         self.scheduler_type = scheduler_type
         self.decay_lr = decay_lr
-        self.decay_start = decay_start
+        self.decay_start = decay_start - 1
         self.decay_epochs = decay_epochs
 
         self.warmup_step = (learning_rate - learning_rate * warmup_lr) / warmup_epochs

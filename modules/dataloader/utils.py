@@ -1,6 +1,7 @@
 import os
 from typing import Union
 import queue
+import random
 
 import cv2
 import numpy as np
@@ -23,7 +24,7 @@ def resize_contain(image: np.ndarray, target_size=640):
     top, bottom = pad_height // 2, pad_height - pad_height // 2
     left, right = pad_width // 2, pad_width - pad_width // 2
 
-    image = cv2.copyMakeBorder(image, top, bottom, left, right, cv2.BORDER_CONSTANT, value=(0, 0, 0))
+    image = cv2.copyMakeBorder(image, top, bottom, left, right, cv2.BORDER_REPLICATE)
 
     return image
 

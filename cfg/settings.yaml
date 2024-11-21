@@ -6,7 +6,7 @@ crop_method: resize
 flip_vertical: 0.5
 flip_horizontal: 0.5
 rotate_degree: 0
-zoom: 2
+zoom: 4
 translate_vertical: 0.25
 translate_horizontal: 0.25
 hsv_h: 0.15
@@ -39,6 +39,6 @@ warmup_epochs: 10
 warmup_lr: 0.001 # learing_rate * warmup_lr (in start)
 scheduler_type: cosine
 decay_lr: 0.01 # learning_rate * decay_ratio (in end)
-decay_start: 50
+decay_start: 25
 save_period: 0
 model: resnet56.yaml

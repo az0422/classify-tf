@@ -10,6 +10,7 @@ if "TF_CPP_MIN_LOG_LEVEL" not in os.environ.keys():
 import tensorflow as tf
 from tensorflow.keras.optimizers import Adam, Adadelta, Adagrad, AdamW, Adamax, Ftrl, Lion, Nadam, RMSprop, SGD
 from tensorflow.keras.losses import CategoricalCrossentropy
+from tensorflow.keras.callbacks import EarlyStopping
 
 from modules.utils import parse_cfg, apply_local_cfg
 from modules.nn.model import ClassifyModel
@@ -148,7 +149,11 @@ def train(model, dataloader, dataloaderval, cfg, epoch):
                 decay_start=cfg["decay_start"],
                 decay_epochs=cfg["epochs"] - cfg["decay_start"],
             ),
-            GarbageCollect()
+            GarbageCollect(),
+            EarlyStopping(
+                monitor='val_loss',
+                patience=cfg["patience"],
+            ),
         ],
     )
 

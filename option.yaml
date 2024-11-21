@@ -10,7 +10,7 @@
 #flip_vertical: 0.5 # probability. range: (no) 0 - 1.0 (all)
 #flip_horizontal: 0.5 # probability. range: (no) 0 - 1.0 (all)
 #rotate_degree: 0 # degree.
-#zoom: 2 # multiply. range: >= 1 (1: no zoom)
+#zoom: 4 # multiply. range: >= 1 (1: no zoom)
 #translate_vertical: 0.25 # ratio. range: (no) 0 - 1.0 (whole height size)
 #translate_horizontal: 0.25 # ratio. range: (no) 0 - 1.0 (whole width size)
 

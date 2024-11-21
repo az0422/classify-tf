@@ -14,4 +14,4 @@ backbone:
  - [-1, 6, CSPResNet, [512]]
 
 head:
- - [-1, 1, Classify, [0]]
+ - [-1, 1, Classify, []]
