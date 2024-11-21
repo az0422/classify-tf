@@ -56,9 +56,13 @@ This project is alpha version!
   - `cspresnet128.yaml`
   - `cspresnet124-eeb4.yaml` (experimental)
 
-## Experimental Environment
+## Experiment
+### Experimental Environment
 * CPU: AMD Ryzen 7900 @ 4.5GHz; 90W
 * Memory: DDR5 64GB
 * GPU: RTX 4060 Ti 16GB @ 2.5GHz; 125W x2
 * OS: Ubuntu 24.04 (docker image: nvidia/cuda:12.2.2-cudnn8-devel-ubuntu22.04)
 * Python: CPython 3.10
+
+### Model Performance
+Experimenting now...
