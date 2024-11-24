@@ -32,7 +32,7 @@ loss: CCE
 learning_rate: 0.1
 batch_size: 256
 image_size: 224 # input size
-epochs: 200
+epochs: 300
 patience: 50
 mixed_precision: mixed_float16
 warmup_epochs: 10

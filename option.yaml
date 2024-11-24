@@ -52,7 +52,7 @@
 #batch_size: 256 # batch size
 #patience: 10 # patience for epochs for early stopping
 #image_size: 224 # input size
-#epochs: 250 # epochs
+#epochs: 500 # epochs
 #mixed_precision: mixed_float16 # mixed precision policy. select from: float32, mixed_float16, mixed_bfloat16, etc...
 
 # Learning rate scheduler options

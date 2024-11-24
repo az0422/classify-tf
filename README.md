@@ -1,4 +1,4 @@
-This project is alpha version!
+This project is a sandbox project! This projects will be used for experiments!
 
 # Image Classifier using TensorFlow
 ## How to Use
@@ -46,15 +46,22 @@ This project is alpha version!
 
 ## Model Configurations
 * ResNet Models
-  - `resnet56.yaml`
-  - `resnet54-eeb2.yaml` (experimental)
-  - `resnet128.yaml`
-  - `resnet124-eeb4.yaml` (experimental)
+  - `resnet18.yaml`
+  - `resnet24.yaml`
+  - `resnet33.yaml`
+  - `resnet54.yaml`
+  - `resnet78.yaml`
+  - `resnet102.yaml`
+  - `resnet174.yaml`
+
 * CSPResNet Models
-  - `cspresnet56.yaml`
-  - `cspresnet54-eeb2.yaml` (experimental)
-  - `cspresnet128.yaml`
-  - `cspresnet124-eeb4.yaml` (experimental)
+  - `cspresnet18.yaml`
+  - `cspresnet24.yaml`
+  - `cspresnet33.yaml`
+  - `cspresnet54.yaml`
+  - `cspresnet78.yaml`
+  - `cspresnet102.yaml`
+  - `cspresnet174.yaml`
 
 ## Experiment
 ### Experimental Environment
