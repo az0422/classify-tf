@@ -16,10 +16,5 @@ layers_dict = {
     "CSPResNet": CSPResNet,
     "SPPF": SPPF,
 
-    "EEBResNet_1": EEBResNet_1,
-    "EEBResNet_2": EEBResNet_2,
-    "EEBResNet_3": EEBResNet_3,
-    "EEBResNet_4": EEBResNet_4,
-
     "Classify": Classify,
 }

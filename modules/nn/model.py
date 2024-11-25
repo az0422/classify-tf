@@ -21,10 +21,6 @@ from .modules import (
     EEB,
     ResNet,
     CSPResNet,
-    EEBResNet_1,
-    EEBResNet_2,
-    EEBResNet_3,
-    EEBResNet_4,
     SPPF,
     Classify,
 )
@@ -92,10 +88,6 @@ def parse_model(cfg, classes, image_size=None):
             CSPResNet,
             EEB,
             SPPF,
-            EEBResNet_1,
-            EEBResNet_2,
-            EEBResNet_3,
-            EEBResNet_4,
         ):
             args.insert(0, channels[index_])
             args[1] = quantize_channels(args[1] * width_multiple)
