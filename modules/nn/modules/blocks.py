@@ -57,28 +57,6 @@ class EEB(Layer):
         y = self.conv4(c)
         return y
 
-class CSPEEB(Layer):
-    def __init__(self, in_channels, out_channels, n=1, dim=128):
-        super().__init__()
-
-        channels_h = out_channels // 2
-        self.conv1 = Conv(in_channels, channels_h, 1, 1)
-        self.conv2 = Conv(in_channels, channels_h, 1, 1)
-        self.conv3 = Conv(out_channels, out_channels, 1, 1)
-
-        self.m = Sequential([
-            EEB(channels_h, channels_h, dim) for _ in range(n)
-        ])
-    
-    def call(self, x):
-        a = self.conv1(x)
-        b = self.conv2(x)
-        c = self.m(a)
-
-        y = self.conv3(tf.concat([b, c], axis=-1))
-
-        return y
-
 class ResNet(Layer):
     def __init__(self, in_channels, out_channels, expand=0.5):
         super().__init__()
@@ -91,6 +69,62 @@ class ResNet(Layer):
     
     def call(self, x):
         return x + self.m(x)
+
+class EEBResNet_1(Layer):
+    def __init__(self, in_channels, out_channels, dim, expand=0.5):
+        super().__init__()
+        channels_h = round(out_channels * expand)
+        self.m = Sequential([
+            Conv(in_channels, channels_h, 1, 1),
+            Conv(channels_h, channels_h, 3, 1),
+            Conv(channels_h, out_channels, 1, 1),
+            EEB(out_channels, out_channels, dim),
+        ])
+    
+    def call(self, x):
+        return x + self.m(x)
+
+class EEBResNet_2(Layer):
+    def __init__(self, in_channels, out_channels, dim, expand=0.5):
+        super().__init__()
+        channels_h = round(out_channels * expand)
+        self.m = Sequential([
+            EEB(out_channels, out_channels, dim),
+            Conv(in_channels, channels_h, 1, 1),
+            Conv(channels_h, channels_h, 3, 1),
+            Conv(channels_h, out_channels, 1, 1),
+        ])
+    
+    def call(self, x):
+        return x + self.m(x)
+
+class EEBResNet_3(Layer):
+    def __init__(self, in_channels, out_channels, dim, expand=0.5):
+        super().__init__()
+        channels_h = round(out_channels * expand)
+        self.m = Sequential([
+            Conv(in_channels, channels_h, 1, 1),
+            Conv(channels_h, channels_h, 3, 1),
+            Conv(channels_h, out_channels, 1, 1),
+        ])
+        self.eeb = EEB(in_channels, in_channels, dim)
+    
+    def call(self, x):
+        return x + self.m(self.eeb(x))
+
+class EEBResNet_4(Layer):
+    def __init__(self, in_channels, out_channels, dim, expand=0.5):
+        super().__init__()
+        channels_h = round(out_channels * expand)
+        self.m = Sequential([
+            Conv(in_channels, channels_h, 1, 1),
+            Conv(channels_h, channels_h, 3, 1),
+            Conv(channels_h, out_channels, 1, 1),
+        ])
+        self.eeb = EEB(out_channels, out_channels, dim)
+    
+    def call(self, x):
+        return self.eeb(x + self.m(x))
 
 class CSPResNet(Layer):
     def __init__(self, in_channels, out_channels, n=1, expand=0.5):

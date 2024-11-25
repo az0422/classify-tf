@@ -19,9 +19,12 @@ from .modules import (
     Concat,
     Reshape,
     EEB,
-    CSPEEB,
     ResNet,
     CSPResNet,
+    EEBResNet_1,
+    EEBResNet_2,
+    EEBResNet_3,
+    EEBResNet_4,
     SPPF,
     Classify,
 )
@@ -88,14 +91,17 @@ def parse_model(cfg, classes, image_size=None):
             ResNet,
             CSPResNet,
             EEB,
-            CSPEEB,
             SPPF,
+            EEBResNet_1,
+            EEBResNet_2,
+            EEBResNet_3,
+            EEBResNet_4,
         ):
             args.insert(0, channels[index_])
             args[1] = quantize_channels(args[1] * width_multiple)
             channels.append(args[1])
 
-            if layer in (CSPResNet, CSPEEB):
+            if layer in (CSPResNet,):
                 args.insert(2, depth)
                 depth_ = depth
                 depth = 1
