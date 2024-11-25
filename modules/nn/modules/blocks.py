@@ -66,62 +66,6 @@ class ResNet(Layer):
     def call(self, x):
         return x + self.m(x)
 
-class EEBResNet_1(Layer):
-    def __init__(self, in_channels, out_channels, dim, expand=0.5):
-        super().__init__()
-        channels_h = round(out_channels * expand)
-        self.m = Sequential([
-            Conv(in_channels, channels_h, 1, 1),
-            Conv(channels_h, channels_h, 3, 1),
-            Conv(channels_h, out_channels, 1, 1),
-            EEB(out_channels, out_channels, dim),
-        ])
-    
-    def call(self, x):
-        return x + self.m(x)
-
-class EEBResNet_2(Layer):
-    def __init__(self, in_channels, out_channels, dim, expand=0.5):
-        super().__init__()
-        channels_h = round(out_channels * expand)
-        self.m = Sequential([
-            EEB(out_channels, out_channels, dim),
-            Conv(in_channels, channels_h, 1, 1),
-            Conv(channels_h, channels_h, 3, 1),
-            Conv(channels_h, out_channels, 1, 1),
-        ])
-    
-    def call(self, x):
-        return x + self.m(x)
-
-class EEBResNet_3(Layer):
-    def __init__(self, in_channels, out_channels, dim, expand=0.5):
-        super().__init__()
-        channels_h = round(out_channels * expand)
-        self.m = Sequential([
-            Conv(in_channels, channels_h, 1, 1),
-            Conv(channels_h, channels_h, 3, 1),
-            Conv(channels_h, out_channels, 1, 1),
-        ])
-        self.eeb = EEB(in_channels, in_channels, dim)
-    
-    def call(self, x):
-        return x + self.m(self.eeb(x))
-
-class EEBResNet_4(Layer):
-    def __init__(self, in_channels, out_channels, dim, expand=0.5):
-        super().__init__()
-        channels_h = round(out_channels * expand)
-        self.m = Sequential([
-            Conv(in_channels, channels_h, 1, 1),
-            Conv(channels_h, channels_h, 3, 1),
-            Conv(channels_h, out_channels, 1, 1),
-        ])
-        self.eeb = EEB(out_channels, out_channels, dim)
-    
-    def call(self, x):
-        return self.eeb(x + self.m(x))
-
 class CSPResNet(Layer):
     def __init__(self, in_channels, out_channels, n=1, expand=0.5):
         super().__init__()
