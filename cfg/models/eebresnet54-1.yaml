@@ -4,13 +4,13 @@ depth_multiple: 1.0
 backbone:
  - [-1, 1, Conv, [32, 3, 2]]
  - [-1, 1, Conv, [64, 3, 2]]
- - [-1, 2, EEBResNet_1, [64]]
+ - [-1, 2, EEBResNet_1, [64, 16]]
  - [-1, 1, Conv, [128, 3, 2]]
- - [-1, 4, EEBResNet_1, [128]]
+ - [-1, 4, EEBResNet_1, [128, 32]]
  - [-1, 1, Conv, [256, 3, 2]]
- - [-1, 6, EEBResNet_1, [256]]
+ - [-1, 6, EEBResNet_1, [256, 64]]
  - [-1, 1, Conv, [512, 3, 2]]
- - [-1, 4, EEBResNet_1, [512]]
+ - [-1, 4, EEBResNet_1, [512, 64]]
 
 head:
  - [-1, 1, Classify, []]

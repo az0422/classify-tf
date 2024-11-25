@@ -46,22 +46,22 @@
 #checkpoint_name: train # a name of checkpoint
 
 # Training options
-#optimizer: Adam # optimizer
+#optimizer: SGD # optimizer
 #loss: CCE # loss function. select from: CCE (categorical crossentropy), MSE (mean squared error), MAE (mean average error), RMSE (rooted mean squared error)
-#learning_rate: 0.001 # learning rate
+#learning_rate: 0.1 # learning rate
 #batch_size: 256 # batch size
-#patience: 10 # patience for epochs for early stopping
+#patience: 50 # patience for epochs for early stopping
 #image_size: 224 # input size
-#epochs: 500 # epochs
+#epochs: 300 # epochs
 #mixed_precision: mixed_float16 # mixed precision policy. select from: float32, mixed_float16, mixed_bfloat16, etc...
 
 # Learning rate scheduler options
 #warmup_epochs: 10 # warmup length
 #warmup_lr: 0.001 # learing_rate * warmup_lr (in start)
 #scheduler_type: cosine
-#decay_lr: 0.1 # learning_rate * decay_lr (in end)
-#decay_start: 20 # decay start epoch
+#decay_lr: 0.01 # learning_rate * decay_lr (in end)
+#decay_start: 25 # decay start epoch
 
 # Model options
 #save_period: 0 # frequency of saving weights.
-#model: resnet56.yaml # model configuration filename
+#model: resnet54.yaml # model configuration filename

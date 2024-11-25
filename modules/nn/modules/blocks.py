@@ -28,11 +28,7 @@ class EEB(Layer):
         self.conv1 = Conv(in_channels, out_channels, 1, 1)
         self.conv2 = Conv(in_channels, out_channels, 1, 1)
         self.conv3 = Conv(out_channels, out_channels, 1, 1)
-        self.conv4 = Sequential([
-            Conv(out_channels, out_channels // 2, 1, 1),
-            Conv(out_channels // 2, out_channels // 2, 3, 1),
-            Conv(out_channels // 2, out_channels, 1, 1),
-        ])
+        self.conv4 = Conv(out_channels, out_channels, 1, 1)
 
         self.m1 = Sequential([
             Conv(in_channels, dim, 1, 1),
