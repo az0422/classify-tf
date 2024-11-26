@@ -28,7 +28,6 @@ class EEB(Layer):
         self.conv1 = Conv(in_channels, out_channels, 1, 1)
         self.conv2 = Conv(in_channels, out_channels, 1, 1)
         self.conv3 = Conv(out_channels, out_channels, 1, 1)
-        self.conv4 = Conv(out_channels, out_channels, 1, 1)
 
         self.m1 = Sequential([
             Conv(in_channels, dim, 1, 1),
@@ -49,8 +48,7 @@ class EEB(Layer):
         atn = self.m1(a)
         atn = self.m2(tf.nn.l2_normalize(atn))
 
-        c = self.conv3(b + atn)
-        y = self.conv4(c)
+        y = self.conv3(b + atn)
         return y
 
 class ResNet(Layer):

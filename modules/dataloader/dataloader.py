@@ -94,7 +94,7 @@ class Loader(multiprocessing.Process):
         return self.queue.get()
 
 class DataLoader(Sequence):
-    def __init__(self, images: list, cfg: dict, augment_flag=True):
+    def __init__(self, images: str, cfg: dict, augment_flag=True):
         super().__init__()
         random.seed(time.time())
 
@@ -128,7 +128,7 @@ class DataLoader(Sequence):
             ]
 
         else:
-            self.subdivisions = 2
+            self.subdivisions = 2 if self.cfg["batch_size"] >= 2 else 1
             length = len(images) // self.subdivisions
             random.shuffle(self.images)
             self.augments = [

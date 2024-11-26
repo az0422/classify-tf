@@ -145,10 +145,10 @@ def parse_model(cfg, classes, image_size=None):
     return layers_list, layer_info, cfg_str
 
 class ClassifyModel(Model):
-    def __init__(self, cfg, classes, image_size=None, name="classify", *args, **kwargs):
+    def __init__(self, cfg, classes, image_size=None, name="classify", **kwargs):
         self.layers_list, self.layer_info, self.cfg = parse_model(cfg, classes, image_size)
 
-        super(ClassifyModel, self).__init__(self.layers_list[0], self.layers_list[-1], name=name, *args, **kwargs)
+        super(ClassifyModel, self).__init__(self.layers_list[0], self.layers_list[-1], name=name, **kwargs)
 
         print("Total parameters: %.4f M" % (self.count_params() / 1e+6))
         print("Total FLOPs: %.4f GFLOPs per image" % (calc_flops(self) / 1e+9))
