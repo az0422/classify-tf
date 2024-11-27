@@ -81,6 +81,34 @@ class CSPResNet(Layer):
         y2 = self.conv3(tf.concat([a, y1], axis=-1))
         return y2
 
+class Inception(Layer):
+    def __init__(self, in_channels, out_channels):
+        super().__init__()
+
+        channels_h = out_channels // 4
+
+        self.conv1 = Conv(in_channels, channels_h, 1, 1)
+        self.conv2 = Sequential([
+            Conv(in_channels, channels_h, 1, 1),
+            Conv(channels_h, channels_h, 3, 1),
+        ])
+        self.conv3 = Sequential([
+            Conv(in_channels, channels_h, 1, 1),
+            Conv(channels_h, channels_h, 5, 1),
+        ])
+        self.conv4 = Sequential([
+            MaxPooling2D(3, 1, padding="same"),
+            Conv(in_channels, channels_h, 1, 1)
+        ])
+    
+    def call(self, x):
+        a = self.conv1(x)
+        b = self.conv2(x)
+        c = self.conv3(x)
+        d = self.conv4(x)
+
+        return tf.concat([a, b, c, d], axis=-1)
+
 class SPPF(Layer):
     def __init__(self, in_channels, out_channels):
         super().__init__()

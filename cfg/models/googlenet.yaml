@@ -1,0 +1,30 @@
+width_multiple: 1.0
+depth_multiple: 1.0
+
+backbone:
+ - [-1, 1, Conv, [16, 3, 1]]
+
+ - [-1, 1, tf.keras.layers.MaxPooling2D, [3, 2, "same"]]
+ - [-1, 1, Conv, [32, 1, 1]]
+ - [-1, 1, Conv, [32, 3, 1]]
+
+ - [-1, 1, tf.keras.layers.MaxPooling2D, [3, 2, "same"]]
+ - [-1, 1, Inception, [64]]
+ - [-1, 1, Inception, [64]]
+
+ - [-1, 1, tf.keras.layers.MaxPooling2D, [3, 2, "same"]]
+ - [-1, 1, Inception, [128]]
+ - [-1, 1, Inception, [128]]
+ - [-1, 2, Inception, [128]]
+ - [-1, 1, Inception, [128]]
+
+ - [-1, 1, tf.keras.layers.MaxPooling2D, [3, 2, "same"]]
+ - [-1, 1, Inception, [256]]
+ - [-1, 1, Inception, [256]]
+
+ - [-1, 1, tf.keras.layers.MaxPooling2D, [3, 2, "same"]]
+ - [-1, 1, Conv, [512, 3, 1]]
+ - [-1, 1, Conv, [512, 3, 1]]
+
+head:
+ - [-1, 1, Classify, []]

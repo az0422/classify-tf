@@ -14,6 +14,7 @@ layers_dict = {
     "EmbedExpandBlock": EEB,
     "ResNet": ResNet,
     "CSPResNet": CSPResNet,
+    "Inception": Inception,
     "SPPF": SPPF,
 
     "Classify": Classify,

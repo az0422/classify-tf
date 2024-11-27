@@ -18,10 +18,13 @@ from .modules import (
     Shortcut,
     Concat,
     Reshape,
+
     EEB,
     ResNet,
     CSPResNet,
+    Inception,
     SPPF,
+
     Classify,
 )
 
@@ -87,6 +90,7 @@ def parse_model(cfg, classes, image_size=None):
             ResNet,
             CSPResNet,
             EEB,
+            Inception,
             SPPF,
         ):
             args.insert(0, channels[index_])
