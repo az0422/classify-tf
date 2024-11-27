@@ -49,9 +49,8 @@ def create_dataloader(cfg):
     return dataloader
 
 def evaluate_model(model, dataloader):
-    
     def evaluate(x, y):
-        pred = model(x, training=False)
+        pred = model.predict(x, verbose=0)
         loss = model.loss(y, pred)
         model.metrics[-1].update_state(y, pred)
 
@@ -70,7 +69,7 @@ def evaluate_model(model, dataloader):
 
         i_time += round((end - start) * 1000)
 
-        print("evaluate iterations: %d/%d\tspend time: %4dms/it\tloss:%.4f\taccuracy:%.4f" % (
+        print("Evaluate iterations: %d/%d\tspend time: %4dms/it\tloss: %.4f\taccuracy: %.4f" % (
             i + 1,
             len(dataloader),
             i_time // (i + 1),
@@ -80,6 +79,11 @@ def evaluate_model(model, dataloader):
 
     print()
     dataloader.stopAugment()
+
+    print("loss: %.4f\taccuracy: %.4f" % (
+        loss / (i + 1),
+        model.metrics[-1].result()["accuracy"].numpy()
+    ))
 
 def main(cfg, epoch):
     gpus = tf.config.list_physical_devices('GPU')
@@ -102,11 +106,14 @@ def main(cfg, epoch):
     
     tf.keras.mixed_precision.set_global_policy(cfg["mixed_precision"])
 
+    print("Load model")
     with gpu_process.scope():
         model = create_model(cfg)
         model = load_weights(cfg, model, epoch)
+        model.trainable = False
         model = model_compile(cfg, model)
     
+    print("Evaluate Model")
     dataloader = create_dataloader(cfg)
     evaluate_model(model, dataloader)
 

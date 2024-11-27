@@ -29,13 +29,11 @@ class EEB(Layer):
         self.conv2 = Conv(in_channels, out_channels, 1, 1)
         self.conv3 = Conv(out_channels, out_channels, 1, 1)
 
-        self.m1 = Sequential([
-            Conv(in_channels, dim, 1, 1),
-            Conv(dim, dim, 1, 1, act=False),
+        self.m = Sequential([
+            Conv(out_channels, dim, 1, 1),
             GlobalAveragePooling2D(),
-        ])
 
-        self.m2 = Sequential([
+            Dense(dim, activation=tf.nn.l2_normalize, use_bias=False),
             FC(dim, out_channels),
             FC(out_channels, out_channels),
             Reshape([1, 1, out_channels]),
@@ -45,10 +43,9 @@ class EEB(Layer):
         a = self.conv1(x)
         b = self.conv2(x)
 
-        atn = self.m1(a)
-        atn = self.m2(tf.nn.l2_normalize(atn))
+        atn = self.m(a)
 
-        y = self.conv3(b + atn)
+        y = self.conv3(b * atn)
         return y
 
 class ResNet(Layer):

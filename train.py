@@ -26,7 +26,7 @@ def make_checkpoint_path(cfg):
         checkpoint_path = checkpoint_path + str(index)
     
     os.makedirs(checkpoint_path)
-    print("checkpoint path:", checkpoint_path)
+    print("Checkpoint path:", checkpoint_path)
     return checkpoint_path
 
 def model_compile(cfg, model):
@@ -185,7 +185,7 @@ def main(cfg, checkpoint, epoch, resume):
         checkpoint_path = cfg["path"]
 
     last_epoch = 0
-    print("create model")
+    print("Create model")
     with gpu_process.scope():
         model, classes = create_model(cfg, checkpoint, resume)
 
@@ -198,10 +198,10 @@ def main(cfg, checkpoint, epoch, resume):
     cfg["classes"] = classes
     yaml.dump(cfg, open(os.path.join(checkpoint_path, "cfg.yaml"), "w"))
 
-    print("create data loaders")
+    print("Create data loaders")
     dataloader, dataloaderval = create_dataloaders(cfg)
 
-    print("train start")
+    print("Train start")
     train(model, dataloader, dataloaderval, cfg, last_epoch)
 
     dataloader.stopAugment()

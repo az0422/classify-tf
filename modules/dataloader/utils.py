@@ -29,7 +29,7 @@ def resize_contain(image: np.ndarray, target_size=640):
     return image
 
 def checker_log(ok: int, none: int):
-    print("checking files... ok: %-16d\terror: %-16d" % (ok, none), end="\r")
+    print("Checking files... ok: %-16d\terror: %-16d" % (ok, none), end="\r")
 
 def load_filelist(image: str, loaders: int):
     images = []
