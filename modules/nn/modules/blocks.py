@@ -18,8 +18,8 @@ class AttentionChannel(Layer):
             Conv2D(in_channels, 1, 1, activation=tf.nn.sigmoid),
         ])
     
-    def call(self, x):
-        return x * self.atn(x)
+    def call(self, x, training=None):
+        return x * self.atn(x, training=training)
 
 class EEB(Layer):
     def __init__(self, in_channels, out_channels, dim):
@@ -39,13 +39,13 @@ class EEB(Layer):
             Reshape([1, 1, out_channels]),
         ])
     
-    def call(self, x):
-        a = self.conv1(x)
-        b = self.conv2(x)
+    def call(self, x, training=None):
+        a = self.conv1(x, training=training)
+        b = self.conv2(x, training=training)
 
-        atn = self.m(a)
+        atn = self.m(a, training=training)
 
-        y = self.conv3(b * atn)
+        y = self.conv3(b * atn, training=training)
         return y
 
 class ResNet(Layer):
@@ -58,8 +58,8 @@ class ResNet(Layer):
             Conv(channels_h, out_channels, 1, 1),
         ])
     
-    def call(self, x):
-        return x + self.m(x)
+    def call(self, x, training=None):
+        return x + self.m(x, training=training)
 
 class CSPResNet(Layer):
     def __init__(self, in_channels, out_channels, n=1, expand=0.5):
@@ -74,11 +74,11 @@ class CSPResNet(Layer):
             ResNet(channels_h, channels_h, expand) for _ in range(n)
         ])
     
-    def call(self, x):
-        a = self.conv1(x)
-        b = self.conv2(x)
-        y1 = self.m(b)
-        y2 = self.conv3(tf.concat([a, y1], axis=-1))
+    def call(self, x, training=None):
+        a = self.conv1(x, training=training)
+        b = self.conv2(x, training=training)
+        y1 = self.m(b, training=training)
+        y2 = self.conv3(tf.concat([a, y1], axis=-1), training=training)
         return y2
 
 class Inception(Layer):
@@ -101,11 +101,11 @@ class Inception(Layer):
             Conv(in_channels, channels_h, 1, 1)
         ])
     
-    def call(self, x):
-        a = self.conv1(x)
-        b = self.conv2(x)
-        c = self.conv3(x)
-        d = self.conv4(x)
+    def call(self, x, training=None):
+        a = self.conv1(x, training=training)
+        b = self.conv2(x, training=training)
+        c = self.conv3(x, training=training)
+        d = self.conv4(x, training=training)
 
         return tf.concat([a, b, c, d], axis=-1)
 
@@ -116,10 +116,10 @@ class SPPF(Layer):
         self.conv1 = Conv(in_channels, out_channels, 1, 1)
         self.conv2 = Conv(out_channels, out_channels, 1, 1)
     
-    def call(self, x):
-        y = [self.conv1(x)]
+    def call(self, x, training=None):
+        y = [self.conv1(x, training=training)]
         y.extend(self.maxpool(y[-1]) for _ in range(3))
         y = tf.concat(y, axis=-1)
         y = tf.cast(y, dtype=x.dtype)
-        return self.conv2(y)
+        return self.conv2(y, training=training)
 

@@ -16,8 +16,8 @@ class FC(Layer):
         else:
             self.act = None
     
-    def call(self, x):
-        y = self.bn(self.dense(x))
+    def call(self, x, training=None):
+        y = self.bn(self.dense(x), training=training)
         if self.act is None:
             return y
         return self.act(y)
@@ -36,8 +36,8 @@ class Conv(Layer):
         else:
             self.act = None
     
-    def call(self, x):
-        y = self.bn(self.conv(x))
+    def call(self, x, training=None):
+        y = self.bn(self.conv(x), training=training)
         if self.act is None:
             return y
         return self.act(y)
@@ -56,8 +56,8 @@ class ConvTranspose(Layer):
         else:
             self.act = None
     
-    def call(self, x):
-        y = self.bn(self.conv(x))
+    def call(self, x, training=None):
+        y = self.bn(self.conv(x), training=training)
         if self.act is None:
             return y
         return self.act(y)
@@ -66,7 +66,7 @@ class Shortcut(Layer):
     def __init__(self):
         super().__init__()
     
-    def call(self, x):
+    def call(self, x, training=None):
         return x[0] + x[1]
 
 class Concat(Layer):
@@ -74,7 +74,7 @@ class Concat(Layer):
         super().__init__()
         self.axis = axis
     
-    def call(self, x):
+    def call(self, x, training=None):
         return tf.concat(x, axis=self.axis)
 
 class Reshape(Layer):
@@ -82,6 +82,6 @@ class Reshape(Layer):
         super().__init__()
         self.reshape_ = shape
     
-    def call(self, x):
+    def call(self, x, training=None):
         batch = tf.shape(x)[0]
         return tf.reshape(x, [batch, *self.reshape_])
