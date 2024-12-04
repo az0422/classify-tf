@@ -2,15 +2,15 @@ width_multiple: 1.0
 depth_multiple: 1.0
 
 backbone:
- - [-1, 1, Conv, [32, 3, 2]]
  - [-1, 1, Conv, [64, 3, 2]]
- - [-1, 1, ResNet, [64]]
  - [-1, 1, Conv, [128, 3, 2]]
- - [-1, 2, ResNet, [128]]
+ - [-1, 1, ResNet, [128]]
  - [-1, 1, Conv, [256, 3, 2]]
- - [-1, 4, ResNet, [256]]
+ - [-1, 2, ResNet, [256]]
  - [-1, 1, Conv, [512, 3, 2]]
- - [-1, 2, ResNet, [512]]
+ - [-1, 4, ResNet, [512]]
+ - [-1, 1, Conv, [1024, 3, 2]]
+ - [-1, 2, ResNet, [1024]]
 
 head:
  - [-1, 1, Classify, []]

@@ -69,7 +69,7 @@ def evaluate_model(model, dataloader):
 
         i_time += round((end - start) * 1000)
 
-        print("Evaluate iterations: %d/%d\tspend time: %4dms/it\tloss: %.4f\taccuracy: %.4f" % (
+        print("Evaluate iterations: %d/%d     spend time: %dms/it     loss: %.4f     accuracy: %.4f     " % (
             i + 1,
             len(dataloader),
             i_time // (i + 1),
@@ -80,7 +80,7 @@ def evaluate_model(model, dataloader):
     print()
     dataloader.stopAugment()
 
-    print("loss: %.4f\taccuracy: %.4f" % (
+    print("loss: %.4f     accuracy: %.4f" % (
         loss / (i + 1),
         model.metrics[-1].result()["accuracy"].numpy()
     ))
