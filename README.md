@@ -46,22 +46,22 @@ This project is a sandbox project! This projects will be used for experiments!
 
 ## Model Configurations
 * ResNet Models
-  - `resnet18.yaml`
-  - `resnet24.yaml`
-  - `resnet33.yaml`
-  - `resnet54.yaml`
-  - `resnet78.yaml`
-  - `resnet102.yaml`
-  - `resnet174.yaml`
+  - `resnet/18.yaml`
+  - `resnet/24.yaml`
+  - `resnet/33.yaml`
+  - `resnet/54.yaml`
+  - `resnet/78.yaml`
+  - `resnet/102.yaml`
+  - `resnet/174.yaml`
 
 * CSPResNet Models
-  - `cspresnet18.yaml`
-  - `cspresnet24.yaml`
-  - `cspresnet33.yaml`
-  - `cspresnet54.yaml`
-  - `cspresnet78.yaml`
-  - `cspresnet102.yaml`
-  - `cspresnet174.yaml`
+  - `cspresnet/18.yaml`
+  - `cspresnet/24.yaml`
+  - `cspresnet/33.yaml`
+  - `cspresnet/54.yaml`
+  - `cspresnet/78.yaml`
+  - `cspresnet/102.yaml`
+  - `cspresnet/174.yaml`
 
 ## Experiment
 ### Experimental Environment
