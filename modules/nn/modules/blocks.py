@@ -81,6 +81,21 @@ class CSPResNet(Layer):
         y2 = self.conv3(tf.concat([a, y1], axis=-1), training=training)
         return y2
 
+class ResNetFC(Layer):
+    def __init__(self, in_channels, out_channels, expand=0.5):
+        super().__init__()
+
+        channels_h = round(out_channels * expand)
+
+        self.m = Sequential([
+            FC(in_channels, channels_h),
+            FC(channels_h, channels_h),
+            FC(channels_h, out_channels),
+        ])
+    
+    def call(self, x, training=None):
+        return x + self.m(x, training=training)
+
 class Inception(Layer):
     def __init__(self, in_channels, out_channels):
         super().__init__()

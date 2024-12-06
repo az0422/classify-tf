@@ -3,6 +3,7 @@ import os
 import math
 import numpy as np
 import gc
+import copy
 
 import tensorflow as tf
 from tensorflow.keras import layers
@@ -16,12 +17,14 @@ from .modules import (
     Conv,
     ConvTranspose,
     Shortcut,
+    Multiply,
     Concat,
     Reshape,
 
     EEB,
     ResNet,
     CSPResNet,
+    ResNetFC,
     Inception,
     SPPF,
 
@@ -70,6 +73,7 @@ def parse_model(cfg, classes, image_size=None):
         
         depth_ = 0
         depth = math.ceil(depth * depth_multiple)
+        args_ = []
 
         if type(index) is int:
             index_ = index if index < 0 else index + 1
@@ -87,7 +91,9 @@ def parse_model(cfg, classes, image_size=None):
             FC,
             Conv,
             ConvTranspose,
+
             ResNet,
+            ResNetFC,
             CSPResNet,
             EEB,
             Inception,
@@ -101,6 +107,11 @@ def parse_model(cfg, classes, image_size=None):
                 args.insert(2, depth)
                 depth_ = depth
                 depth = 1
+            
+            if layer in (FC, Conv, ConvTranspose):
+                if callable(args[-1]):
+                    args_ = copy.copy(args)
+                    args_[-1] = "tf.nn." + args[-1].__name__
         
         elif layer in (
             layers.Conv2D,
@@ -109,7 +120,7 @@ def parse_model(cfg, classes, image_size=None):
             args[0] = quantize_channels(args[0] * width_multiple)
             channels.append(args[0])
         
-        elif layer is Shortcut:
+        elif layer in (Shortcut, Multiply):
             channels.append(channels[index_[0]])
         
         elif layer is Concat:
@@ -129,8 +140,8 @@ def parse_model(cfg, classes, image_size=None):
         else:
             ch = channels[index_]
             channels.append(ch)
-        
-        print(" %-8s%24s%12s%40s%40s" % (i_, index, depth_ if depth_ else depth, layer_name, args))
+            
+        print(" %-8s%24s%12s%40s%40s" % (i_, index, depth_ if depth_ else depth, layer_name, args_ if args_ else args))
         
         if depth != 1:
             m = Sequential([layer(*args) for _ in range(depth)])

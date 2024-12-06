@@ -69,6 +69,17 @@ class Shortcut(Layer):
     def call(self, x, training=None):
         return x[0] + x[1]
 
+class Multiply(Layer):
+    def __init__(self):
+        super().__init__()
+    
+    def call(self, x, training=None):
+        y = x[0]
+        for xx in x[1:]:
+            y *= xx
+        
+        return y
+
 class Concat(Layer):
     def __init__(self, axis=-1):
         super().__init__()
