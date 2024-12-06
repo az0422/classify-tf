@@ -1,6 +1,7 @@
 import os
 import threading
 import sys
+import random
 
 class Copy(threading.Thread):
     def __init__(self, src, dst):
@@ -22,7 +23,7 @@ def split(root, ratio):
 
         threads = []
         files = os.listdir(category_path)
-        files = sorted(files)
+        files = random.shuffle(files)
         length = len(files)
 
         train = files[round(length * ratio):]
