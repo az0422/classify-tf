@@ -128,7 +128,6 @@ class DataLoader(Sequence):
             ]
 
         else:
-            self.subdivisions = 2 if self.cfg["batch_size"] >= 2 else 1
             length = len(images) // self.subdivisions
             random.shuffle(self.images)
             self.augments = [
