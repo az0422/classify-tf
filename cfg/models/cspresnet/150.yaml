@@ -4,12 +4,12 @@ depth_multiple: 1.0
 backbone:
  - [-1, 1, Conv, [64, 7, 2]]
  - [-1, 1, tf.keras.layers.MaxPooling2D, [2, 2, "valid"]]
- - [-1, 1, CSPResNet, [64]]
- - [-1, 8, Conv, [128, 3, 2]]
- - [-1, 1, CSPResNet, [128]]
- - [-1, 16, Conv, [256, 3, 2]]
- - [-1, 1, CSPResNet, [256]]
- - [-1, 24, Conv, [512, 3, 2]]
+ - [-1, 8, CSPResNet, [64]]
+ - [-1, 1, Conv, [128, 3, 2]]
+ - [-1, 16, CSPResNet, [128]]
+ - [-1, 1, Conv, [256, 3, 2]]
+ - [-1, 16, CSPResNet, [256]]
+ - [-1, 1, Conv, [512, 3, 2]]
  - [-1, 8, CSPResNet, [512]]
 
 head:
