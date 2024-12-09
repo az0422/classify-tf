@@ -52,7 +52,7 @@ This project is a sandbox project! This projects will be used for experiments!
   - `resnet/54.yaml`
   - `resnet/78.yaml`
   - `resnet/102.yaml`
-  - `resnet/174.yaml`
+  - `resnet/150.yaml`
 
 * CSPResNet Models
   - `cspresnet/18.yaml`
@@ -61,7 +61,7 @@ This project is a sandbox project! This projects will be used for experiments!
   - `cspresnet/54.yaml`
   - `cspresnet/78.yaml`
   - `cspresnet/102.yaml`
-  - `cspresnet/174.yaml`
+  - `cspresnet/150.yaml`
 
 ## Experiment
 ### Experimental Environment
