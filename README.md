@@ -63,6 +63,10 @@ This project is a sandbox project! This projects will be used for experiments!
   - `cspresnet/102.yaml`
   - `cspresnet/150.yaml`
 
+* Other Models
+  - `vgg16.yaml`
+  - `googlenet.yaml`
+
 ## Experiment
 ### Experimental Environment
 * CPU: AMD Ryzen 7900 @ 4.5GHz; 90W
