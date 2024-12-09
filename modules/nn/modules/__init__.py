@@ -7,7 +7,6 @@ layers_dict = {
     "Conv": Conv,
     "ConvTranspose": ConvTranspose,
     "Shortcut": Shortcut,
-    "Multiply": Multiply,
     "Concat": Concat,
     "Reshape": Reshape,
 

@@ -17,7 +17,6 @@ from .modules import (
     Conv,
     ConvTranspose,
     Shortcut,
-    Multiply,
     Concat,
     Reshape,
 
@@ -58,9 +57,9 @@ def parse_model(cfg, classes, image_size=None):
     channels = [3]
     layer_info = []
 
-    print("=" * (1 + 8 + 24 + 12 + 40 + 40))
-    print(" %-8s%24s%12s%40s%40s" % ("index", "from", "depth", "layer_name", "args"))
-    print("-" * (1 + 8 + 24 + 12 + 40 + 40))
+    print("=" * (1 + 8 + 24 + 12 + 40 + 48))
+    print(" %-8s%24s%12s%40s%48s" % ("index", "from", "depth", "layer_name", "args"))
+    print("-" * (1 + 8 + 24 + 12 + 40 + 48))
 
     for i_, (index, depth, layer_name, args) in enumerate(cfg["backbone"] + cfg["head"]):
         if layer_name.startswith("layers."):
@@ -114,13 +113,17 @@ def parse_model(cfg, classes, image_size=None):
                     args_[-1] = "tf.nn." + args[-1].__name__
         
         elif layer in (
-            layers.Conv2D,
-            layers.Conv2DTranspose,
+            tf.keras.layers.Conv2D,
+            tf.keras.layers.Conv2DTranspose,
         ):
             args[0] = quantize_channels(args[0] * width_multiple)
             channels.append(args[0])
         
-        elif layer in (Shortcut, Multiply):
+        elif layer in (
+            Shortcut,
+            tf.keras.layers.Multiply,
+            tf.keras.layers.Add
+        ):
             channels.append(channels[index_[0]])
         
         elif layer is Concat:
@@ -141,7 +144,7 @@ def parse_model(cfg, classes, image_size=None):
             ch = channels[index_]
             channels.append(ch)
             
-        print(" %-8s%24s%12s%40s%40s" % (i_, index, depth_ if depth_ else depth, layer_name, args_ if args_ else args))
+        print(" %-8s%24s%12s%40s%48s" % (i_, index, depth_ if depth_ else depth, layer_name, args_ if args_ else args))
         
         if depth != 1:
             m = Sequential([layer(*args) for _ in range(depth)])
@@ -155,7 +158,7 @@ def parse_model(cfg, classes, image_size=None):
 
         layer_info.append([index, depth, layer_name, args])
     
-    print("-" * (1 + 8 + 24 + 12 + 40 + 40))
+    print("-" * (1 + 8 + 24 + 12 + 40 + 48))
 
     return layers_list, layer_info, cfg_str
 
