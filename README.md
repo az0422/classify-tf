@@ -76,4 +76,25 @@ This project is a sandbox project! This projects will be used for experiments!
 * Python: CPython 3.10
 
 ### Model Performance
-Experimenting now...
+
+| Model        | Input Size | Params    | Accuracy    | Inference Time    |
+|--------------|------------|-----------|-------------|-------------------|
+| ResNet18     | 224x224    | 3.21M     | 69.61%      | 37ms              |
+| ResNet24     | 224x224    | 3.48M     | 70.56%      | 37ms              |
+| ResNet33     | 224x224    | 4.77M     | 71.90%      | 38ms              |
+| ResNet54     | 224x224    | 7.03M     | 69.86%      | 38ms              |
+| ResNet78     | 224x224    | 6.94M     | 70.70%      | 39ms              |
+| ResNet102    | 224x224    | 12.00M    | 67.66%      | 40ms              |
+| ResNet150    | 224x224    | 13.34M    | 71.77%      | 42ms              |
+|              |            |           |             |                   |
+| CSPResNet18  | 224x224    | 3.06M     | 67.98%      | 38ms              |
+| CSPResNet24  | 224x224    | 3.13M     | 67.95%      | 38ms              |
+| CSPResNet33  | 224x224    | 3.46M     | 68.93%      | 38ms              |
+| CSPResNet54  | 224x224    | 4.03M     | 70.61%      | 39ms              |
+| CSPResNet78  | 224x224    | 4.00M     | 72.17%      | 39ms              |
+| CSPResNet102 | 224x224    | 5.27M     | 69.43%      | 41ms              |
+| CSPResNet150 | 224x224    | 5.62M     | 72.71%      | 42ms              |
+
+* Evaluated by `CUDA_VISIBLE_DEVICES=0 python3 evaluate.py path=<checkpoint> batch_size=1` command
+* The weights can be downloaded from release tab.
+* The ImageNet100 dataset was used for training.
