@@ -2,50 +2,27 @@ import math
 
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import MaxPooling2D,  GlobalAveragePooling2D, Conv2D
+from tensorflow.keras.layers import MaxPooling2D, Dense, GlobalAveragePooling2D, Conv2D
 
 from .layers import *
 
-class AttentionChannel(Layer):
-    def __init__(self, in_channels):
-        super().__init__()
-        self.atn = Sequential([
-            Conv(in_channels, in_channels, 3, 1),
-            Conv(in_channels, in_channels, 3, 1),
-            GlobalAveragePooling2D(),
-            Reshape([1, 1, in_channels]),
-            Conv(in_channels, in_channels, 1, 1),
-            Conv2D(in_channels, 1, 1, activation=tf.nn.sigmoid),
-        ])
-    
-    def call(self, x, training=None):
-        return x * self.atn(x, training=training)
-
-class EEB(Layer):
+class EDFC(Layer):
     def __init__(self, in_channels, out_channels, dim):
         super().__init__()
 
-        self.conv1 = Conv(in_channels, out_channels, 1, 1)
-        self.conv2 = Conv(in_channels, out_channels, 1, 1)
-        self.conv3 = Conv(out_channels, out_channels, 1, 1)
-
-        self.m = Sequential([
-            Conv(out_channels, dim, 1, 1),
-            GlobalAveragePooling2D(),
-
-            Dense(dim, activation=tf.nn.l2_normalize, use_bias=False),
+        self.m1 = FC(in_channels, out_channels)
+        self.m2 = Sequential([
+            FC(out_channels, dim),
             FC(dim, out_channels),
-            FC(out_channels, out_channels),
-            Reshape([1, 1, out_channels]),
+            Dense(out_channels, use_bias=False, activation=tf.nn.sigmoid)
         ])
+        self.m3 = FC(out_channels, out_channels)
     
     def call(self, x, training=None):
-        a = self.conv1(x, training=training)
-        b = self.conv2(x, training=training)
+        x = self.m1(x, training=training)
+        atn = self.m2(x, training=training)
+        y = self.m3(x * atn, training=training)
 
-        atn = self.m(a, training=training)
-
-        y = self.conv3(b * atn, training=training)
         return y
 
 class ResNet(Layer):
@@ -80,6 +57,19 @@ class CSPResNet(Layer):
         y1 = self.m(b, training=training)
         y2 = self.conv3(tf.concat([a, y1], axis=-1), training=training)
         return y2
+
+class ResNetEDFC(Layer):
+    def __init__(self, in_channels, out_channels, n=1, expand=0.5, dim=64):
+        super().__init__()
+
+        self.m = Sequential([ResNet(out_channels, out_channels, expand) for _ in range(n)])
+        self.edfc = EDFC(out_channels, out_channels, dim)
+    
+    def call(self, x):
+        a = self.m(x)
+        edfc = self.edfc(a)
+
+        return a + edfc
 
 class ResNetFC(Layer):
     def __init__(self, in_channels, out_channels, expand=0.5):

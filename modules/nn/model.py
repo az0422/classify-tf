@@ -20,10 +20,10 @@ from .modules import (
     Concat,
     Reshape,
 
-    EEB,
     ResNet,
     CSPResNet,
     ResNetFC,
+    ResNetEDFC,
     Inception,
     SPPF,
 
@@ -96,7 +96,7 @@ def parse_model(cfg, classes, image_size=None):
             ResNet,
             ResNetFC,
             CSPResNet,
-            EEB,
+            ResNetEDFC,
             Inception,
             SPPF,
         ):
@@ -108,6 +108,11 @@ def parse_model(cfg, classes, image_size=None):
                 args.insert(2, depth)
                 depth_ = depth
                 depth = 1
+            
+            if layer in (ResNetEDFC,):
+                args.insert(2, depth[1])
+                depth_ = depth
+                depth = depth[0]
             
             if layer in (FC, Conv, ConvTranspose):
                 if callable(args[-1]):
