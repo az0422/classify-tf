@@ -69,13 +69,13 @@ class ResNetEDFC(Layer):
         self.reshape = Reshape([1, 1, out_channels])
     
     def call(self, x, training=None):
-        a = self.m(x, training=training)
-        a = self.gap(a)
+        x = self.m(x, training=training)
+        a = self.gap(x)
 
         edfc = self.edfc(a, training=training)
         edfc = self.reshape(edfc)
 
-        return a + edfc
+        return x + edfc
 
 class ResNetFC(Layer):
     def __init__(self, in_channels, out_channels, expand=0.5):
