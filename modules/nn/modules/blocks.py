@@ -64,10 +64,16 @@ class ResNetEDFC(Layer):
 
         self.m = Sequential([ResNet(out_channels, out_channels, expand) for _ in range(n)])
         self.edfc = EDFC(out_channels, out_channels, dim)
+        
+        self.gap = GlobalAveragePooling2D()
+        self.reshape = Reshape([1, 1, out_channels])
     
-    def call(self, x):
-        a = self.m(x)
-        edfc = self.edfc(a)
+    def call(self, x, training=None):
+        a = self.m(x, training=training)
+        a = self.gap(a)
+
+        edfc = self.edfc(a, training=training)
+        edfc = self.reshape(edfc)
 
         return a + edfc
 
