@@ -61,7 +61,9 @@ def parse_model(cfg, classes, image_size=None):
     print(" %-8s%24s%12s%40s%48s" % ("index", "from", "depth", "layer_name", "args"))
     print("-" * (1 + 8 + 24 + 12 + 40 + 48))
 
-    for i_, (index, depth, layer_name, args) in enumerate(cfg["backbone"] + cfg["head"]):
+    network = cfg["network"] if "network" in cfg.keys() else cfg["backbone"] + cfg["head"]
+
+    for i_, (index, depth, layer_name, args) in enumerate(network):
         if layer_name.startswith("layers."):
             layer = eval(layer_name)
             layer_name = "tf.keras." + layer_name
@@ -71,7 +73,7 @@ def parse_model(cfg, classes, image_size=None):
             layer = layers_dict[layer_name]
         
         depth_ = 0
-        depth = math.ceil(depth * depth_multiple)
+        depth = math.ceil(depth * depth_multiple) if type(depth) is int else [math.ceil(d * depth_multiple) for d in depth]
         args_ = []
 
         if type(index) is int:
