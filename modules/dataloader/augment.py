@@ -120,7 +120,10 @@ class DataAugment(multiprocessing.Process):
 
             for index, taked_index in enumerate(taked_indices):
                 image, label = self.images[taked_index]
-                image = cv2.imread(image, cv2.IMREAD_COLOR)
+                if image.endswith(".npy"):
+                    image = np.load(image)
+                else:
+                    image = cv2.imread(image, cv2.IMREAD_COLOR)
                 
                 image = self._resize(image).astype(np.float32)
                 image = self._crop(image)

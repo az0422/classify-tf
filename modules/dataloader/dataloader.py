@@ -72,7 +72,11 @@ class Loader(multiprocessing.Process):
             )
 
             for i, (image, label) in enumerate(images_list):
-                image = cv2.imread(image, cv2.IMREAD_COLOR)
+                if image.endswith(".npy"):
+                    image = np.load(image)
+                else:
+                    image = cv2.imread(image, cv2.IMREAD_COLOR)
+                
                 image = self._flip(image)
 
                 image = self._resize(image)

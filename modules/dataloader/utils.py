@@ -88,7 +88,10 @@ class TestImage(threading.Thread):
             image_np = np.frombuffer(self.image, np.uint8)
             test = cv2.imdecode(image_np, cv2.IMREAD_COLOR)
         elif type(self.image) is str:
-            test = cv2.imread(self.image, cv2.IMREAD_COLOR)
+            if self.image.endswith(".npy"):
+                test = np.load(self.image)
+            else:
+                test = cv2.imread(self.image, cv2.IMREAD_COLOR)
         elif type(self.image) is np.ndarray:
             test = cv2.imread(self.image, cv2.IMREAD_COLOR)
         
