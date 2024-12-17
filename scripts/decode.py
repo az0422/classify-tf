@@ -22,22 +22,23 @@ def decode(src, export):
         print(category, end="\r")
         category_path = os.path.join(src, category)
         files = os.listdir(category_path)
-        threads = []
-
-        for file in files:
-            src_ = os.path.join(category_path, file)
-            dest_dir = os.path.join(export, category)
-
-            if not os.path.isdir(dest_dir):
-                os.makedirs(dest_dir)
-
-            dest_ = os.path.join(dest_dir, file)
-
-            threads.append(Save(src_, dest_))
-            threads[-1].start()
         
-        for thread in threads:
-            thread.join()
+        for i in range(0, len(files), 64):
+            threads = []
+            for file in files[i:i+64]:
+                src_ = os.path.join(category_path, file)
+                dest_dir = os.path.join(export, category)
+
+                if not os.path.isdir(dest_dir):
+                    os.makedirs(dest_dir)
+
+                dest_ = os.path.join(dest_dir, file)
+
+                threads.append(Save(src_, dest_))
+                threads[-1].start()
+            
+            for thread in threads:
+                thread.join()
 
 if __name__ == "__main__":
     path = None

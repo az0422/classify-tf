@@ -25,19 +25,21 @@ def convert(src, export, size):
         print(category, end="\r")
         category_path = os.path.join(src, category)
         files = os.listdir(category_path)
-        threads = []
 
-        for file in files:
-            src_ = os.path.join(category_path, file)
-            dest_dir = os.path.join(export, category)
+        for i in range(0, len(files), 64):
+            threads = []
 
-            if not os.path.isdir(dest_dir):
-              os.makedirs(dest_dir)
+            for file in files[i:i+64]:
+                src_ = os.path.join(category_path, file)
+                dest_dir = os.path.join(export, category)
 
-            dest_ = os.path.join(dest_dir, file)
+                if not os.path.isdir(dest_dir):
+                    os.makedirs(dest_dir)
 
-            threads.append(Save(src_, dest_, size))
-            threads[-1].start()
+                dest_ = os.path.join(dest_dir, file)
+
+                threads.append(Save(src_, dest_, size))
+                threads[-1].start()
 
 if __name__ == "__main__":
     path = None
