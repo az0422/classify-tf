@@ -6,24 +6,21 @@ from tensorflow.keras.layers import MaxPooling2D, Dense, GlobalAveragePooling2D,
 
 from .layers import *
 
-class EDFC(Layer):
-    def __init__(self, in_channels, out_channels, dim):
+class SEBlock(Layer):
+    def __init__(self, in_channels, out_channels, ratio=16):
         super().__init__()
 
-        self.m1 = FC(in_channels, out_channels)
-        self.m2 = Sequential([
-            FC(out_channels, dim),
-            FC(dim, out_channels),
-            Dense(out_channels, use_bias=False, activation=tf.nn.sigmoid)
+        squeeze_nodes = out_channels // ratio
+        self.m = Sequential([
+            GlobalAveragePooling2D(),
+            FC(in_channels, squeeze_nodes),
+            FC(squeeze_nodes, out_channels),
+            Dense(out_channels, use_bias=False, activation=tf.nn.sigmoid),
+            Reshape([1, 1, out_channels])
         ])
-        self.m3 = FC(out_channels, out_channels)
     
-    def call(self, x, training=None):
-        x = self.m1(x, training=training)
-        atn = self.m2(x, training=training)
-        y = self.m3(x * atn, training=training)
-
-        return y
+    def call(self, x):
+        return self.m(x) * x
 
 class ResNet(Layer):
     def __init__(self, in_channels, out_channels, expand=0.5):
@@ -58,24 +55,18 @@ class CSPResNet(Layer):
         y2 = self.conv3(tf.concat([a, y1], axis=-1), training=training)
         return y2
 
-class ResNetEDFC(Layer):
-    def __init__(self, in_channels, out_channels, n=1, expand=0.5, dim=64):
+class ResNetSE(Layer):
+    def __init__(self, in_channels, out_channels, n=1, expand=0.5, ratio=16):
         super().__init__()
 
         self.m = Sequential([ResNet(out_channels, out_channels, expand) for _ in range(n)])
-        self.edfc = EDFC(out_channels, out_channels, dim)
-        
-        self.gap = GlobalAveragePooling2D()
-        self.reshape = Reshape([1, 1, out_channels])
+        self.se = SEBlock(out_channels, out_channels, ratio)
     
     def call(self, x, training=None):
         x = self.m(x, training=training)
-        a = self.gap(x)
+        y = self.se(x, training=training)
 
-        edfc = self.edfc(a, training=training)
-        edfc = self.reshape(edfc)
-
-        return x + edfc
+        return y
 
 class ResNetFC(Layer):
     def __init__(self, in_channels, out_channels, expand=0.5):

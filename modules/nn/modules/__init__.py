@@ -10,10 +10,11 @@ layers_dict = {
     "Concat": Concat,
     "Reshape": Reshape,
 
+    "SEBlock": SEBlock,
     "ResNet": ResNet,
     "ResNetFC": ResNetFC,
     "CSPResNet": CSPResNet,
-    "ResNetEDFC": ResNetEDFC,
+    "ResNetSE": ResNetSE,
     "Inception": Inception,
     "SPPF": SPPF,
 

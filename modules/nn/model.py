@@ -22,8 +22,8 @@ from .modules import (
 
     ResNet,
     CSPResNet,
+    ResNetSE,
     ResNetFC,
-    ResNetEDFC,
     Inception,
     SPPF,
 
@@ -73,8 +73,14 @@ def parse_model(cfg, classes, image_size=None):
             layer = layers_dict[layer_name]
         
         depth_ = 0
-        depth = math.ceil(depth * depth_multiple) if type(depth) is int else [math.ceil(d * depth_multiple) for d in depth]
         args_ = []
+
+        if type(depth) is int:
+            depth = math.ceil(depth * depth_multiple)
+        elif type(depth) is list or tuple:
+            depth = [math.ceil(d * depth_multiple) if type(d) is int else int(d) for d in depth]
+        else:
+            depth = int(depth)
 
         if type(index) is int:
             index_ = index if index < 0 else index + 1
@@ -96,7 +102,7 @@ def parse_model(cfg, classes, image_size=None):
             ResNet,
             ResNetFC,
             CSPResNet,
-            ResNetEDFC,
+            ResNetSE,
             Inception,
             SPPF,
         ):
@@ -109,7 +115,8 @@ def parse_model(cfg, classes, image_size=None):
                 depth_ = depth
                 depth = 1
             
-            if layer in (ResNetEDFC,):
+            if layer in (ResNetSE,):
+                assert type(depth) in (list, tuple), "This layer requires the list or tuple depth value."
                 args.insert(2, depth[1])
                 depth_ = depth
                 depth = depth[0]
@@ -138,6 +145,7 @@ def parse_model(cfg, classes, image_size=None):
             channels.append(sum(ch))
         
         elif layer is Reshape:
+            assert type(args[0]) is list or tuple, "This layer requires list of shape."
             ch = args[0][-1]
             channels.append(ch)
 
