@@ -11,6 +11,8 @@ layers_dict = {
     "Reshape": Reshape,
 
     "SEBlock": SEBlock,
+    "CBAM": CBAM,
+    "RCAB": RCAB,
     "ResNet": ResNet,
     "ResNetFC": ResNetFC,
     "CSPResNet": CSPResNet,

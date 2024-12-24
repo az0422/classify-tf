@@ -20,6 +20,9 @@ from .modules import (
     Concat,
     Reshape,
 
+    SEBlock,
+    CBAM,
+    RCAB,
     ResNet,
     CSPResNet,
     ResNetSE,
@@ -99,6 +102,9 @@ def parse_model(cfg, classes, image_size=None):
             Conv,
             ConvTranspose,
 
+            SEBlock,
+            CBAM,
+            RCAB,
             ResNet,
             ResNetFC,
             CSPResNet,

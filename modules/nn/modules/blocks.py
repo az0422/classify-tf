@@ -2,7 +2,7 @@ import math
 
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import MaxPooling2D, Dense, GlobalAveragePooling2D, Conv2D
+from tensorflow.keras.layers import MaxPooling2D, Dense, GlobalAveragePooling2D, GlobalMaxPooling2D, Conv2D
 
 from .layers import *
 
@@ -22,12 +22,80 @@ class SEBlock(Layer):
     def call(self, x):
         return self.m(x) * x
 
+class CBAM(Layer):
+    def __init__(self, in_channels, out_channels):
+        super().__init__()
+
+        self.conv1 = Conv(in_channels, out_channels, 3, 1)
+        self.conv2 = Conv2D(1, 7, 1, padding="same", activation=tf.nn.sigmoid)
+
+        self.fc1 = Sequential([
+            FC(out_channels, out_channels // 2),
+            Dense(out_channels, activation=tf.nn.sigmoid)
+        ])
+
+        self.fc2 = Sequential([
+            FC(out_channels, out_channels // 2),
+            Dense(out_channels, activation=tf.nn.sigmoid)
+        ])
+
+        self.gap = GlobalAveragePooling2D()
+        self.gmp = GlobalMaxPooling2D()
+
+        self.reshape = Reshape([1, 1, out_channels])
+    
+    def call(self, x, training=None):
+        x = self.conv1(x, training=training)
+        gap = self.fc1(self.gap(x), training=training)
+        gmp = self.fc2(self.gmp(x), training=training)
+        ap = tf.reduce_mean(x, axis=-1, keepdims=True)
+        mp = tf.reduce_max(x, axis=-1, keepdims=True)
+
+        ch_atn = self.reshape(tf.nn.sigmoid(gap + gmp))
+        sp_atn = self.conv2(tf.concat([ap, mp], axis=-1))
+
+        return x * ch_atn * sp_atn
+
+class RCAB(Layer):
+    def __init__(self, in_channels, out_channels, expand=0.5):
+        assert in_channels == out_channels
+
+        super().__init__()
+        channels_h = round(out_channels * expand)
+
+        self.m1 = Sequential([
+            Conv(out_channels, channels_h, 1, 1),
+            Conv(channels_h, channels_h, 3, 1),
+            Conv(channels_h, out_channels, 1, 1),
+        ])
+
+        self.m2 = CBAM(out_channels, out_channels)
+    
+    def build(self, input_shape):
+        self.skip_weights = self.add_weight(
+            shape=(),
+            trainable=True,
+            initializer="one",
+        )
+        self.cbam_weights = self.add_weight(
+            shape=(),
+            trainable=True,
+            initializer="one",
+        )
+    
+    def call(self, x, training=None):
+        a = self.m1(x, training=training)
+        b = self.m2(x, training=training)
+
+        return a + b * tf.nn.sigmoid(self.cbam_weights) + x * tf.nn.sigmoid(self.skip_weights)
+
 class ResNet(Layer):
     def __init__(self, in_channels, out_channels, expand=0.5):
+        assert in_channels == out_channels
         super().__init__()
         channels_h = round(out_channels * expand)
         self.m = Sequential([
-            Conv(in_channels, channels_h, 1, 1),
+            Conv(out_channels, channels_h, 1, 1),
             Conv(channels_h, channels_h, 3, 1),
             Conv(channels_h, out_channels, 1, 1),
         ])
@@ -57,6 +125,7 @@ class CSPResNet(Layer):
 
 class ResNetSE(Layer):
     def __init__(self, in_channels, out_channels, n=1, expand=0.5, ratio=16):
+        assert in_channels == out_channels
         super().__init__()
 
         self.m = Sequential([ResNet(out_channels, out_channels, expand) for _ in range(n)])
