@@ -12,11 +12,14 @@ layers_dict = {
 
     "SEBlock": SEBlock,
     "CBAM": CBAM,
-    "RCAB": RCAB,
     "ResNet": ResNet,
     "ResNetFC": ResNetFC,
     "CSPResNet": CSPResNet,
+    "CSPResNet3C": CSPResNet,
     "ResNetSE": ResNetSE,
+    "SEResNet": SEResNet,
+    "CSPSEResNet": CSPSEResNet,
+    "CSPResNet2C": CSPResNet2C,
     "Inception": Inception,
     "SPPF": SPPF,
 

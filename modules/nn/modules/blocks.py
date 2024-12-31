@@ -56,39 +56,6 @@ class CBAM(Layer):
 
         return x * ch_atn * sp_atn
 
-class RCAB(Layer):
-    def __init__(self, in_channels, out_channels, expand=0.5):
-        assert in_channels == out_channels
-
-        super().__init__()
-        channels_h = round(out_channels * expand)
-
-        self.m1 = Sequential([
-            Conv(out_channels, channels_h, 1, 1),
-            Conv(channels_h, channels_h, 3, 1),
-            Conv(channels_h, out_channels, 1, 1),
-        ])
-
-        self.m2 = CBAM(out_channels, out_channels)
-    
-    def build(self, input_shape):
-        self.skip_weights = self.add_weight(
-            shape=(),
-            trainable=True,
-            initializer="one",
-        )
-        self.cbam_weights = self.add_weight(
-            shape=(),
-            trainable=True,
-            initializer="one",
-        )
-    
-    def call(self, x, training=None):
-        a = self.m1(x, training=training)
-        b = self.m2(x, training=training)
-
-        return a + b * tf.nn.sigmoid(self.cbam_weights) + x * tf.nn.sigmoid(self.skip_weights)
-
 class ResNet(Layer):
     def __init__(self, in_channels, out_channels, expand=0.5):
         assert in_channels == out_channels
@@ -136,6 +103,56 @@ class ResNetSE(Layer):
         y = self.se(x, training=training)
 
         return y
+
+class SEResNet(Layer):
+    def __init__(self, in_channels, out_channels, expand=0.5, ratio=16, kernel=3):
+        assert in_channels == out_channels
+        super().__init__()
+
+        self.m = ResNet(out_channels, out_channels, expand, kernel)
+        self.se = SEBlock(out_channels, out_channels, ratio)
+    
+    def call(self, x, training=None):
+        y = self.m(x, training=training)
+        y = self.se(y, training=training)
+
+        return x + y
+
+class CSPSEResNet(Layer):
+    def __init__(self, in_channels, out_channels, n=1, expand=0.5, ratio=16, kernel=3):
+        super().__init__()
+
+        self.m = Sequential([SEResNet(out_channels // 2, out_channels // 2, expand, ratio, kernel) for _ in range(n)])
+        self.conv1 = Conv(in_channels, out_channels // 2, 1, 1)
+        self.conv2 = Conv(in_channels, out_channels // 2, 1, 1)
+        self.conv3 = Conv(out_channels, out_channels, 1, 1)
+    
+    def call(self, x, training=None):
+        a = self.conv1(x, training=training)
+        b = self.conv2(x, training=training)
+
+        y1 = self.m(a, training=training)
+        y = tf.concat([b, y1], axis=-1)
+
+        y = self.conv3(y)
+
+        return y
+
+class CSPResNet2C(Layer):
+    def __init__(self, in_channels, out_channels, n=1, expand=0.5, kernel=3):
+        super().__init__()
+
+        self.conv1 = Conv(in_channels, out_channels, 1, 1)
+        self.conv2 = Conv(out_channels, out_channels, 1, 1)
+        self.m = Sequential([
+            ResNet(out_channels // 2, out_channels // 2, expand, kernel) for _ in range(n)
+        ])
+    
+    def call(self, x, training=None):
+        x = self.conv1(x, training=training)
+        a, b = tf.split(x, 2, axis=-1)
+
+        return self.conv2(tf.concat([self.m(a, training=training), b], axis=-1))
 
 class ResNetFC(Layer):
     def __init__(self, in_channels, out_channels, expand=0.5):
