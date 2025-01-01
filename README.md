@@ -105,10 +105,10 @@ This project is a sandbox project! This projects will be used for experiments!
   - `googlenet.yaml`
 
 * Details
-  - The ResNet models are implemented of 3-layers ResNet block with bottleneck.
-  - The ResNet2L models are implemented of 2-layers ResNet block without bottleneck.
-  - The CSPResNet and CSPResNet2L3C models are implemented of 3-Conv layers for implementing CSPNet structure.
-  - The CSPResNet2C and CSPResNet2L2C models are implemented of 2-Conv layers for implementing CSPNet structure.
+  - The ResNet models are implemented of 3-layers ResNet blocks with bottleneck.
+  - The ResNet2L models are implemented of 2-layers ResNet blocks without bottleneck.
+  - The CSPResNet and CSPResNet2L3C models are implemented of 3-Conv layers to implementing CSPNet structure.
+  - The CSPResNet2C and CSPResNet2L2C models are implemented of 2-Conv layers to implementing CSPNet structure.
 
 ## Experiment
 ### Experimental Environment
