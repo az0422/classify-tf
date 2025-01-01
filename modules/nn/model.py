@@ -22,15 +22,19 @@ from .modules import (
 
     SEBlock,
     CBAM,
-    ResNet,
-    ResNet2L,
-    CSPResNet,
-    ResNetSE,
-    SEResNet,
-    CSPSEResNet,
-    CSPResNet2C,
     Inception,
     SPPF,
+
+    ResNet,
+    ResNet2L,
+    SEResNet,
+    ResNetSE,
+
+    CSPResNet,
+    CSPResNet2C,
+    CSPResNet2L2C,
+    CSPResNet2L3C,
+    CSPSEResNet,
 
     Classify,
 )
@@ -106,15 +110,19 @@ def parse_model(cfg, classes, image_size=None):
 
             SEBlock,
             CBAM,
-            ResNet,
-            ResNet2L,
-            CSPResNet,
-            ResNetSE,
-            SEResNet,
-            CSPSEResNet,
-            CSPResNet2C,
             Inception,
             SPPF,
+
+            ResNet,
+            ResNet2L,
+            SEResNet,
+            ResNetSE,
+
+            CSPResNet,
+            CSPResNet2C,
+            CSPResNet2L2C,
+            CSPResNet2L3C,
+            CSPSEResNet,
         ):
             args.insert(0, channels[index_])
             args[1] = quantize_channels(args[1] * width_multiple)
@@ -123,6 +131,8 @@ def parse_model(cfg, classes, image_size=None):
             if layer in (
                 CSPResNet,
                 CSPResNet2C,
+                CSPResNet2L2C,
+                CSPResNet2L3C,
                 CSPSEResNet,
             ):
                 args.insert(2, depth)
