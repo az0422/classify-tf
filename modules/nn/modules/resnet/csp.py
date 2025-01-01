@@ -13,7 +13,7 @@ class CSPResNet(Layer):
         channels_h = out_channels // 2
         self.conv1 = Conv(in_channels, channels_h, 1, 1)
         self.conv2 = Conv(in_channels, channels_h, 1, 1)
-        self.conv3 = Conv(channels_h, out_channels, 1, 1)
+        self.conv3 = Conv(out_channels, out_channels, 1, 1)
 
         self.m = Sequential([
             ResNet(channels_h, channels_h, expand) for _ in range(n)

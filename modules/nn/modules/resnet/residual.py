@@ -7,13 +7,13 @@ from ..layers import Conv
 from ..blocks import SEBlock
 
 class ResNet(Layer):
-    def __init__(self, in_channels, out_channels, expand=0.5):
+    def __init__(self, in_channels, out_channels, expand=0.5, kernel=3):
         assert in_channels == out_channels
         super().__init__()
         channels_h = round(out_channels * expand)
         self.m = Sequential([
             Conv(out_channels, channels_h, 1, 1),
-            Conv(channels_h, channels_h, 3, 1),
+            Conv(channels_h, channels_h, kernel, 1),
             Conv(channels_h, out_channels, 1, 1),
         ])
     
