@@ -1,10 +1,9 @@
-import math
-
 import tensorflow as tf
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Layer, MaxPooling2D, Dense, GlobalAveragePooling2D, GlobalMaxPooling2D, Conv2D
 
-from .layers import Conv, FC, Reshape
+from tensorflow.keras.layers import Layer, Dense, Conv2D, MaxPooling2D, GlobalAveragePooling2D, GlobalMaxPooling2D
+from tensorflow.keras.models import Sequential
+
+from ..layers import FC, Conv, Reshape
 
 class SEBlock(Layer):
     def __init__(self, in_channels, out_channels, ratio=16):
@@ -14,13 +13,14 @@ class SEBlock(Layer):
         self.m = Sequential([
             GlobalAveragePooling2D(),
             FC(in_channels, squeeze_nodes),
-            FC(squeeze_nodes, out_channels),
-            Dense(out_channels, use_bias=False, activation=tf.nn.sigmoid),
+            Dense(out_channels, use_bias=False),
             Reshape([1, 1, out_channels])
         ])
     
     def call(self, x):
-        return self.m(x) * x
+        atn = self.m(x)
+        atn = tf.nn.sigmoid(atn)
+        return atn * x
 
 class CBAM(Layer):
     def __init__(self, in_channels, out_channels):
@@ -51,7 +51,7 @@ class CBAM(Layer):
         ap = tf.reduce_mean(x, axis=-1, keepdims=True)
         mp = tf.reduce_max(x, axis=-1, keepdims=True)
 
-        ch_atn = self.reshape(tf.nn.sigmoid(gap + gmp))
+        ch_atn = self.reshape((gap + gmp) / 2)
         sp_atn = self.conv2(tf.concat([ap, mp], axis=-1))
 
         return x * ch_atn * sp_atn
@@ -97,4 +97,3 @@ class SPPF(Layer):
         y = tf.concat(y, axis=-1)
         y = tf.cast(y, dtype=x.dtype)
         return self.conv2(y, training=training)
-

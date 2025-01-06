@@ -4,7 +4,7 @@ from tensorflow.keras.layers import Layer
 from tensorflow.keras.models import Sequential
 
 from ..layers import Conv
-from ..blocks import SEBlock
+from .base import SEBlock
 
 class ResNet(Layer):
     def __init__(self, in_channels, out_channels, expand=0.5, kernel=3):
