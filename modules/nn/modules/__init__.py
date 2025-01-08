@@ -1,6 +1,5 @@
 from .layers import *
 from .blocks import *
-from .resnet import *
 from .head import *
 
 layers_dict = {
