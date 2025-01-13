@@ -23,7 +23,7 @@ def split(root, ratio):
 
         threads = []
         files = os.listdir(category_path)
-        files = random.shuffle(files)
+        random.shuffle(files)
         length = len(files)
 
         train = files[round(length * ratio):]

@@ -13,4 +13,4 @@ backbone:
  - [-1, [1, 2], ResNetSE, [512, 0.5, 16]]
 
 head:
- - [-1, 1, Classify, []]
+ - [-1, 1, ClassifyR, []]

@@ -37,6 +37,7 @@ from .modules import (
     CSPSEResNet,
 
     Classify,
+    ClassifyR,
 )
 
 def quantize_channels(channels):
@@ -173,7 +174,7 @@ def parse_model(cfg, classes, image_size=None):
             ch = args[0][-1]
             channels.append(ch)
 
-        elif layer in (Classify,):
+        elif layer in (Classify, ClassifyR):
             ch = channels[index_]
             args.insert(0, ch)
             args.insert(1, classes)

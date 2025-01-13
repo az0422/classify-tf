@@ -31,4 +31,5 @@ layers_dict = {
     "CSPResNet2L2C": CSPResNet2L2C,
 
     "Classify": Classify,
+    "ClassifyR": ClassifyR,
 }
