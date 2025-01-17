@@ -47,7 +47,6 @@ def model_compile(cfg, model):
         metrics=['accuracy']
     )
 
-
 def create_model(cfg, checkpoint, resume):
     classes = len(os.listdir(cfg["train_image"]))
 
@@ -69,15 +68,12 @@ def create_model(cfg, checkpoint, resume):
 
 def load_weights(cfg, model, checkpoint, epoch):
     weights_file = os.path.join(checkpoint, "weights")
-    weights_suffix = ".weights.h5" if tf.__version__ >= "2.16.0" else ".ckpt"
-
     if epoch in ("last", "best"):
-        weights_file = os.path.join(weights_file, epoch) + weights_suffix
+        weights_file = os.path.join(weights_file, epoch) + ".keras"
     else:
-        weights_file = os.path.join(weights_file, "%016d" % (int(epoch)))
+        weights_file = os.path.join(weights_file, "%016d" % (int(epoch))) + ".keras"
     
     model.load_weights(weights_file)
-    
     model_compile(cfg, model)
 
     last_epoch = 0
@@ -188,15 +184,16 @@ def main(cfg, checkpoint, epoch, resume):
     print("Create model")
     with gpu_process.scope():
         model, classes = create_model(cfg, checkpoint, resume)
-
-        if checkpoint is not None:
-            model, last_epoch = load_weights(cfg, model, checkpoint, epoch)
     
     if not resume:
         last_epoch = 0
     
     cfg["classes"] = classes
     yaml.dump(cfg, open(os.path.join(checkpoint_path, "cfg.yaml"), "w"))
+
+    if checkpoint is not None:
+        print("Load weights")
+        model, last_epoch = load_weights(cfg, model, checkpoint, epoch)
 
     print("Create data loaders")
     dataloader, dataloaderval = create_dataloaders(cfg)

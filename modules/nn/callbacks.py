@@ -11,10 +11,9 @@ class SaveCheckpoint(Callback):
         self.save_period = save_period
 
         weights_path = os.path.join(path, "weights")
-        suffix = ".weights.h5" if tf.__version__ >= "2.16.0" else ".ckpt"
-        self.weights_epoch = os.path.join(weights_path, "epoch-%016d") + suffix
-        self.weights_best = os.path.join(weights_path, "best") + suffix
-        self.weights_last = os.path.join(weights_path, "last") + suffix
+        self.weights_epoch = os.path.join(weights_path, "epoch-%016d.keras")
+        self.weights_best = os.path.join(weights_path, "best.keras")
+        self.weights_last = os.path.join(weights_path, "last.keras")
         self.log = os.path.join(path, "train.csv")
 
         self.best_loss = 1e+100
@@ -23,20 +22,17 @@ class SaveCheckpoint(Callback):
             os.makedirs(weights_path)
 
     def on_epoch_end(self, epoch, logs=None):
-        self.model.save_weights(self.weights_last)
+        self.model.save(self.weights_last)
 
         loss = logs["val_loss"]
         if self.best_loss >= loss:
             self.best_loss = loss
-            self.model.save_weights(self.weights_best)
+            self.model.save(self.weights_best)
 
         if self.save_period > 0 and epoch % self.save_period == 0:
-            self.model.save_weights(self.weights_epoch % (epoch + 1))
+            self.model.save(self.weights_epoch % (epoch + 1))
         
-        if hasattr(self.model.optimizer, "lr"):
-            lr = float(tf.keras.backend.get_value(self.model.optimizer.lr))
-        else:
-            lr = self.model.optimizer.learning_rate.numpy()
+        lr = self.model.optimizer.learning_rate.numpy()
 
         with open(self.log, "a") as f:
             f.write("%d,%.4f,%.4f,%.4f,%.4f,%.16f\n" % (
@@ -63,10 +59,7 @@ class Scheduler(Callback):
         self.decay_step = 0.0
     
     def on_epoch_begin(self, epoch, logs=None):
-        if hasattr(self.model.optimizer, "lr"):
-            lr = tf.keras.backend.get_value(self.model.optimizer.lr)
-        else:
-            lr = self.model.optimizer.learning_rate.numpy()
+        lr = self.model.optimizer.learning_rate.numpy()
 
         if epoch < self.warmup_epochs:
             lr = (self.learning_rate - self.learning_rate * self.warmup_lr) / self.warmup_epochs * epoch + self.learning_rate * self.warmup_lr
@@ -81,10 +74,7 @@ class Scheduler(Callback):
         else:
             lr = self.learning_rate
         
-        if hasattr(self.model.optimizer, "lr"):
-            tf.keras.backend.set_value(self.model.optimizer.lr, lr)
-        else:
-            self.model.optimizer.learning_rate.assign(lr)
+        self.model.optimizer.learning_rate.assign(lr)
 
 class GarbageCollect(Callback):
     def __init__(self, *args, **kwargs):
@@ -92,19 +82,3 @@ class GarbageCollect(Callback):
     
     def on_epoch_end(self, *args, **kwargs):
         gc.collect()
-
-class InitializeStop(Callback):
-    def __init__(self, threshold_acc=0.8, patience=3):
-        super().__init__()
-        self.threshold_acc = threshold_acc
-        self.count = 0
-        self.patience = patience
-    
-    def on_epoch_end(self, epoch, logs=None):
-        if self.threshold_acc < logs["val_accuracy"]:
-            self.count += 1
-        else:
-            self.count = 0
-        
-        if self.patience <= self.count:
-            self.model.stop_training = True
