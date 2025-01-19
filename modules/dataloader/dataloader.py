@@ -32,15 +32,6 @@ class Loader(multiprocessing.Process):
             return resize_stretch(image, self.cfg["image_size"])
         raise Exception("invalid resize method %s" % self.cfg["resize_method"])
     
-    def _flip(self, image):
-        if np.random.rand() < self.cfg["flip_vertical"]:
-            image = image[::-1]
-        
-        if np.random.rand() < self.cfg["flip_horizontal"]:
-            image = image[:, ::-1]
-        
-        return image
-    
     def run(self):
         index = 0
 
@@ -61,7 +52,7 @@ class Loader(multiprocessing.Process):
                     self.cfg["image_size"],
                     self.cfg["image_size"],
                     3,
-                ], dtype=np.float32
+                ], dtype=np.uint8
             )
             
             labels = np.zeros(
@@ -76,8 +67,6 @@ class Loader(multiprocessing.Process):
                     image = np.load(image)
                 else:
                     image = cv2.imread(image, cv2.IMREAD_COLOR)
-                
-                image = self._flip(image)
 
                 image = self._resize(image)
 
@@ -87,7 +76,7 @@ class Loader(multiprocessing.Process):
                 images[i] = image
                 labels[i][label] = 1
             
-            self.queue.put([images / 255., labels])
+            self.queue.put([images, labels])
 
             del (
                 images,
@@ -165,11 +154,14 @@ class DataLoader(Sequence):
             images.append(image)
             labels.append(label)
         
-        images_np = np.vstack(images)
+        images_np = np.vstack(images, dtype=np.float16) / 255.
         labels_np = np.vstack(labels)
 
         images_tf = tf.constant(images_np)
         labels_tf = tf.constant(labels_np)
+
+        images_tf = tf.cast(images_tf, tf.float32)
+        labels_tf = tf.cast(labels_tf, tf.float32)
 
         del (
             images,

@@ -5,6 +5,12 @@ import multiprocessing
 
 from .utils import resize_contain, resize_stretch
 
+LOSS_FORMAT = [
+    [".jpeg", cv2.IMWRITE_JPEG_QUALITY],
+    [".webp", cv2.IMWRITE_WEBP_QUALITY],
+    #[".avif", cv2.IMWRITE_AVIF_QUALITY],
+]
+
 class DataAugment(multiprocessing.Process):
     def __init__(self, seed, images, classes, batch_size, cfg):
         super().__init__()
@@ -79,24 +85,30 @@ class DataAugment(multiprocessing.Process):
 
         hsv_mul = np.random.rand(3) * hsv * 2 - hsv + 1.
 
-        image = cv2.cvtColor(image.astype(np.uint8), cv2.COLOR_BGR2HSV).astype(np.float32)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV).astype(np.float32)
         image[..., :] *= hsv_mul
         image[..., 0] = image[..., 0] % 180
         image = np.clip(image, 0, 255.)
-        image = cv2.cvtColor(image.astype(np.uint8), cv2.COLOR_HSV2BGR).astype(np.float32)
+        image = cv2.cvtColor(image.astype(np.uint8), cv2.COLOR_HSV2BGR).astype(np.uint8)
 
         return image
     
     def _dequality(self, image):
-        noise = (np.random.rand(*image.shape) * 255.).astype(np.float32)
+        noise = np.random.normal(0, 25, image.shape)
+        noise = (noise - noise.min()) / (noise.max() - noise.min()) * 2 - 1
+        noise *= 255.
+        
         opacity = np.random.rand() * self.cfg["noise"]
         dequality = 1 - np.random.rand() * self.cfg["dequality"]
 
-        image = image * (1 - opacity) + noise * opacity
+        image = image.astype(np.int32) + np.round(noise * opacity).astype(np.int32)
+        image[image > 255] = 255
+        image[image < 0] = 0
 
         if dequality > 0:
-            _, image = cv2.imencode(".jpg", image.astype(np.uint8), [cv2.IMWRITE_JPEG_QUALITY, round(dequality * 100)])
-            image = cv2.imdecode(image, cv2.IMREAD_COLOR).astype(np.float32)
+            fmt, qlt = random.choices(LOSS_FORMAT)[0]
+            _, image = cv2.imencode(fmt, image, [qlt, round(dequality * 100)])
+            image = cv2.imdecode(image, cv2.IMREAD_COLOR)
 
         return image
     
@@ -109,7 +121,7 @@ class DataAugment(multiprocessing.Process):
                     self.cfg["image_size"],
                     self.cfg["image_size"],
                     3
-                ], dtype=np.float32
+                ], dtype=np.uint8
             )
             labels = np.zeros(
                 [
@@ -125,14 +137,12 @@ class DataAugment(multiprocessing.Process):
                 else:
                     image = cv2.imread(image, cv2.IMREAD_COLOR)
                 
-                image = self._resize(image).astype(np.float32)
+                image = self._resize(image)
                 image = self._crop(image)
                 image = self._flip(image)
                 image = self._translate(image)
                 image = self._hsv(image)
                 image = self._dequality(image)
-
-                image = image.astype(np.uint8)
 
                 if self.cfg["color_space"].lower() == "rgb":
                     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
@@ -140,9 +150,9 @@ class DataAugment(multiprocessing.Process):
                 elif self.cfg["color_space"].lower() == "hsv":
                     image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
                 
-                image = image.astype(np.float32)
+                image = image
 
-                images[index] = image / 255.
+                images[index] = image
                 labels[index][label] = 1
 
             self.queue.put([images, labels])
