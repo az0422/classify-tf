@@ -16,6 +16,7 @@ from .modules import (
     FC,
     Conv,
     ConvTranspose,
+    TemporalConv,
     Shortcut,
     Concat,
     Reshape,
@@ -61,6 +62,7 @@ def parse_model(cfg, classes, image_size=None):
     if activation is not None:
         Conv.default_act[0] = activation
         ConvTranspose.default_act[0] = activation
+        TemporalConv.default_act[0] = activation
         FC.default_act[0] = activation
     
     layers_list = [layers.Input(shape=(image_size, image_size, 3))]
@@ -108,6 +110,7 @@ def parse_model(cfg, classes, image_size=None):
             FC,
             Conv,
             ConvTranspose,
+            TemporalConv,
 
             SEBlock,
             CBAM,
