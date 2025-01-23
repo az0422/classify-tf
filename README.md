@@ -9,11 +9,14 @@ This project is a sandbox project! This projects will be used for experiments!
 
 ### Commands
 * Train: `python3 train.py option=<configuration file (optional)>`
-  - For obtaining weights.
+  - Used to obtain weights.
   - The `option` argument for indivisual training options.
 
+* Train resume: `python3 train.py resume=path/to/checkpoint_path/checkpotin_name`
+  - Used to resume training.
+
 * Plot graph: `python3 plot.py path=path/to/checkpoint_path/checkpoint_name`
-  - For plotting graphs on training.
+  - Used to plot graph of train result.
   - The graphs will be saved onto `path/to/checkpoint_path/checkpoint_name` with `plot.png`.
 
 * Export: `python3 export.py path=path/to/checkpoint_path/checkpoint_name epoch=[best|last|<an epoch number>] image_size=<image_size>`
@@ -22,7 +25,7 @@ This project is a sandbox project! This projects will be used for experiments!
 
 * Select specific GPU (example): `CUDA_VISIBLE_DEVICES=[cpu|<GPU numbers (example: 0,1,2,3)>] python3 train.py option=example.yaml`
   - The default is use all GPUs.
-  - If you have multiple GPUs and want to select specific GPU, you should use this command form.
+  - If you have multiple GPUs and want to select specific GPU, you have to use this command form or set the `CUDA_VISIBLE_DEVICES` variable.
 
 ### Options
 #### Option application order
@@ -36,7 +39,6 @@ This project is a sandbox project! This projects will be used for experiments!
   - Image translate options
   - Color adjustment options
   - Quality adjustment options
-  - Color space adjustment
   - Other dataloader options
 * Train options
   - Checkpoint path
