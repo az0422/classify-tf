@@ -41,4 +41,4 @@ scheduler_type: cosine
 decay_lr: 0.01 # learning_rate * decay_ratio (in end)
 decay_start: 25
 save_period: 0
-model: resnet56.yaml
+model: resnet/54.yaml
