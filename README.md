@@ -24,7 +24,7 @@ This project is a sandbox project! This projects will be used for experiments!
   - The weights files will be saved onto `path/to/checkpoint_path/checkpoint_name/export`.
 
 * Select specific GPU (example): `CUDA_VISIBLE_DEVICES=[cpu|<GPU numbers (example: 0,1,2,3)>] python3 train.py option=example.yaml`
-  - The default is use all GPUs.
+  - The default uses all GPUs.
   - If you have multiple GPUs and want to select specific GPU, you have to use this command form or set the `CUDA_VISIBLE_DEVICES` variable.
 
 ### Options
