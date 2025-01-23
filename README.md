@@ -47,57 +47,30 @@ This project is a sandbox project! This projects will be used for experiments!
 ## Model Configurations
 * ResNet Models
   - `resnet/18.yaml`
-  - `resnet/24.yaml`
-  - `resnet/33.yaml`
   - `resnet/54.yaml`
-  - `resnet/78.yaml`
   - `resnet/102.yaml`
   - `resnet/150.yaml`
   - `resnet2l/15.yaml`
-  - `resnet2l/19.yaml`
-  - `resnet2l/30.yaml`
-  - `resnet2l/42.yaml`
   - `resnet2l/54.yaml`
-  - `resnet2l/70.yaml`
-  - `resnet2l/86.yaml`
   - `resnet2l/110.yaml`
-  - `resnet2l/134.yaml`
   - `resnet2l/166.yaml`
 
 * CSPResNet Models
   - `cspresnet/18.yaml`
-  - `cspresnet/24.yaml`
-  - `cspresnet/33.yaml`
   - `cspresnet/54.yaml`
-  - `cspresnet/78.yaml`
   - `cspresnet/102.yaml`
   - `cspresnet/150.yaml`
   - `cspresnet2c/18.yaml`
-  - `cspresnet2c/24.yaml`
-  - `cspresnet2c/33.yaml`
   - `cspresnet2c/54.yaml`
-  - `cspresnet2c/78.yaml`
   - `cspresnet2c/102.yaml`
   - `cspresnet2c/150.yaml`
   - `cspresnet2l2c/15.yaml`
-  - `cspresnet2l2c/19.yaml`
-  - `cspresnet2l2c/30.yaml`
-  - `cspresnet2l2c/42.yaml`
   - `cspresnet2l2c/54.yaml`
-  - `cspresnet2l2c/70.yaml`
-  - `cspresnet2l2c/86.yaml`
   - `cspresnet2l2c/110.yaml`
-  - `cspresnet2l2c/134.yaml`
   - `cspresnet2l2c/166.yaml`
   - `cspresnet2l3c/15.yaml`
-  - `cspresnet2l3c/19.yaml`
-  - `cspresnet2l3c/30.yaml`
-  - `cspresnet2l3c/42.yaml`
   - `cspresnet2l3c/54.yaml`
-  - `cspresnet2l3c/70.yaml`
-  - `cspresnet2l3c/86.yaml`
   - `cspresnet2l3c/110.yaml`
-  - `cspresnet2l3c/134.yaml`
   - `cspresnet2l3c/166.yaml`
 
 * Other Models

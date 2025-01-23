@@ -23,9 +23,9 @@ def load_model(path, cfg, image_size):
 
 def load_weights(model, path, epoch):
     if epoch in ("last", "best"):
-        weights_path = os.path.join(path, "weights/%s.weights.h5" % epoch) if tf.__version__ >= "2.16.0" else os.path.join(path, "weights/%s.ckpt" % epoch)
+        weights_path = os.path.join(path, "weights/%s.keras" % epoch)
     else:
-        weights_path = os.path.join(path, "weights/epoch-%s.weights.h5" % epoch) if tf.__version__ >= "2.16.0" else os.path.join(path, "weights/epoch-%s.ckpt" % epoch)
+        weights_path = os.path.join(path, "weights/epoch-%s.keras" % epoch)
     
     model.load_weights(weights_path)
 
