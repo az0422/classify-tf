@@ -19,6 +19,11 @@
 #hsv_s: 0.50 # ratio. range: (no change) 0 - 1.0 (all change)
 #hsv_v: 0.50 # ratio. range: (no change) 0 - 1.0 (all change)
 
+# Color adjustment in offset mode
+#hsv_offset_h: 0.0 # ratio: -1 (negative) - +1 (positive)
+#hsv_offset_s: 0.0 # ratio: -1 (negative) - +1 (positive)
+#hsv_offset_v: 0.0 # ratio: -1 (negative) - +1 (positive)
+
 # Quality adjustment options
 #noise: 0.125 # opacity. range: (none)  0 - 1.0 (only noise)
 #dequality: 0.2 # ratio. range: (none) 0 - 1.0 (loss all)
