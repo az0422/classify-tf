@@ -32,7 +32,7 @@ checkpoint_path: runs
 checkpoint_name: train
 optimizer: SGD
 loss: CCE
-learning_rate: 0.1
+learning_rate: 0.2
 batch_size: 256
 image_size: 224 # input size
 epochs: 300
@@ -42,6 +42,6 @@ warmup_epochs: 10
 warmup_lr: 0.001 # learing_rate * warmup_lr (in start)
 scheduler_type: cosine
 decay_lr: 0.01 # learning_rate * decay_ratio (in end)
-decay_start: 25
+decay_start: 15
 save_period: 0
 model: resnet/54.yaml
