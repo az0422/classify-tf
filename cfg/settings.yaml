@@ -12,6 +12,9 @@ translate_horizontal: 0.25
 hsv_h: 0.15
 hsv_s: 0.50
 hsv_v: 0.50
+hsv_offset_h: 0.0
+hsv_offset_s: 0.0
+hsv_offset_v: 0.0
 noise: 0.125
 dequality: 0.2
 color_space: BGR

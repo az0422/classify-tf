@@ -79,17 +79,25 @@ class DataAugment(multiprocessing.Process):
         return image
     
     def _hsv(self, image):
-        hsv = np.array([self.cfg["hsv_h"], self.cfg["hsv_s"], self.cfg["hsv_v"]], dtype=np.float32)
-        hsv[hsv > 1.] = 1.
-        hsv[hsv < 0.] = 0.
+        hsv = np.clip(
+            np.array([self.cfg["hsv_h"], self.cfg["hsv_s"], self.cfg["hsv_v"]], dtype=np.float32),
+            0.0,
+            1.0
+        )
+        hsv_offset = np.clip(
+            np.array([self.cfg["hsv_offset_h"], self.cfg["hsv_offset_s"], self.cfg["hsv_offset_v"]], dtype=np.float32),
+            -1.0,
+            1.0,
+        )
 
-        hsv_mul = np.random.rand(3) * hsv * 2 - hsv + 1.
+        hsv = np.random.rand(3) * hsv * 2 - hsv + 1.
 
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV).astype(np.float32)
-        image[..., :] *= hsv_mul
-        image[..., 0] = image[..., 0] % 180
-        image = np.clip(image, 0, 255.)
-        image = cv2.cvtColor(image.astype(np.uint8), cv2.COLOR_HSV2BGR).astype(np.uint8)
+        image_hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV).astype(np.float32)
+        image_hsv = image_hsv + image_hsv * hsv_offset
+        image_hsv = image_hsv * hsv
+        image_hsv[..., 0] = image_hsv[..., 0] % 180
+        image = np.clip(image_hsv, 0, 255.).astype(np.uint8)
+        image = cv2.cvtColor(image, cv2.COLOR_HSV2BGR)
 
         return image
     
