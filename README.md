@@ -15,6 +15,8 @@ This project is a sandbox project! This projects will be used for experiments!
 * Train resume: `python3 train.py resume=path/to/checkpoint_path/checkpotin_name`
   - Used to resume training.
 
+* Predict: `python3 classify.py weights=path/to/checkpoint_path/checkpoint_name image=path/to/image(s/dir) epoch=[best|last|<an epoch number>](optional) output_format=[csv|stdout](optional)`
+
 * Plot graph: `python3 plot.py path=path/to/checkpoint_path/checkpoint_name`
   - Used to plot graph of train result.
   - The graphs will be saved onto `path/to/checkpoint_path/checkpoint_name` with `plot.png`.

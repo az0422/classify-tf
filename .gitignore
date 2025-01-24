@@ -8,4 +8,5 @@ test.py
 *.tar
 *.tar.gz
 *.tgz
+test*
 cfg/models/experiment/
