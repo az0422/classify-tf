@@ -57,7 +57,6 @@ This project is a sandbox project! This projects will be used for experiments!
   - `resnet2l/15.yaml`
   - `resnet2l/54.yaml`
   - `resnet2l/110.yaml`
-  - `resnet2l/166.yaml`
 
 * CSPResNet Models
   - `cspresnet/18.yaml`
@@ -71,11 +70,9 @@ This project is a sandbox project! This projects will be used for experiments!
   - `cspresnet2l2c/15.yaml`
   - `cspresnet2l2c/54.yaml`
   - `cspresnet2l2c/110.yaml`
-  - `cspresnet2l2c/166.yaml`
   - `cspresnet2l3c/15.yaml`
   - `cspresnet2l3c/54.yaml`
   - `cspresnet2l3c/110.yaml`
-  - `cspresnet2l3c/166.yaml`
 
 * Other Models
   - `vgg16.yaml`
