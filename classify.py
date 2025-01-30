@@ -52,7 +52,7 @@ def predict(cfg, model, path, image_path):
 def out_predict(results, output_format, out_path):
     if output_format == "csv":
         csv = ["%s,%s" % (img, cls) for (img, cls) in results]
-        with open(os.path.join(out_path, "reuslt.csv"), "w") as f:
+        with open(os.path.join(out_path, "result.csv"), "w") as f:
             f.write("\n".join(csv))
         
         print("The result was saved in %s." % (os.path.join(out_path, "result.csv")))
