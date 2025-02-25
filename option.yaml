@@ -1,68 +1,207 @@
 # User options for train
 # As comment or blank value, will be applied default.
 
+# ===========================================================
 # DATALOADER AND AUGMENTATION OPTIONS
-# Image size option 
-#crop_ratio: 0.5 # ratio. range: (delete) 0 - 1.0 (all area)
-#crop_method: resize # method. select from: blank, resize
+# -----------------------------------------------------------
+# Augmentation options
+# -----------------------------------------------------------
+# `crop_ratio`
+#  - minimum of size of cropped image
+#  - 0.0 (remove all) - 1.0 (use whole area)
+# `crop_method`
+#  - the way to crop
+#  - `blank`: unselected area will be filled blak
+#  - `resize`: unselected area will be removed
+# `flip_vertical`
+#  - probability of vertical direction flip
+#  - 0.0 (none) - 1.0 (all)
+# `flip_horizontal`
+#  - probability of horizontal direction flip
+#  - 0.0 (none) - 1.0 (all)
+# `rotation_degree`
+#  - maximum degree of rotate image
+#  - 0.0 (none) - 360 (original degree)
+# `zoom`
+#  - range of adjustment scale
+#  - >= 1.0 (original)
+# `translate_vertical`
+#  - probability of parallel translate of vertical direction
+#  - 0.0 (none) - 1.0 (all)
+# `translate_horizontal`
+#  - probability of parallel translate of horizontal direction
+#  - 0.0 (none) - 1.0 (all)
+# `hsv_h`
+#  - adjust hue channel in HSV color space
+#  - 0.0 (none) - 1.0 (changed extremely)
+# `hsv_s`
+#  - adjust saturation channel in HSV color space
+#  - 0.0 (none) - 1.0 (changed extremely)
+# `hsv_v`
+#  - adjust value channel in HSV color space
+#  - 0.0 (none) - 1.0 (changed extremely)
+# `hsv_h_offset`
+#  - adjust hue channel in HSV color space
+#  - -1.0 (will be set 0) - +1.0 (will be set x2)
+# `hsv_s_offset`
+#  - adjust saturation channel in HSV color space
+#  - -1.0 (will be set 0) - +1.0 (will be set x2)
+# `hsv_v_offset`
+#  - adjust value channel in HSV color space
+#  - -1.0 (will be set 0) - +1.0 (will be set x2)
+# `dequality`
+#  - range of loss in encoding loss format of image
+#  - 0.0 (lossless) - 1.0 (loss all)
+# -----------------------------------------------------------
 
-# Image translate options
-#flip_vertical: 0.5 # probability. range: (no) 0 - 1.0 (all)
-#flip_horizontal: 0.5 # probability. range: (no) 0 - 1.0 (all)
-#rotate_degree: 0 # degree.
-#zoom: 4 # multiply. range: >= 1 (1: no zoom)
-#translate_vertical: 0.25 # ratio. range: (no) 0 - 1.0 (whole height size)
-#translate_horizontal: 0.25 # ratio. range: (no) 0 - 1.0 (whole width size)
+#crop_ratio: 0.5
+#crop_method: blank
+#flip_vertical: 0.5
+#flip_horizontal: 0.5
+#rotate_degree: 0
+#zoom: 4
+#translate_vertical: 0.25
+#translate_horizontal: 0.25
+#hsv_h: 0.15
+#hsv_s: 0.50
+#hsv_v: 0.50
+#hsv_offset_h: 0.0
+#hsv_offset_s: 0.0
+#hsv_offset_v: 0.0
+#noise: 0.125
+#dequality: 0.2
 
-# Color adjustment options
-#hsv_h: 0.15 # ratio. range: (no change) 0 - 1.0 (all change)
-#hsv_s: 0.50 # ratio. range: (no change) 0 - 1.0 (all change)
-#hsv_v: 0.50 # ratio. range: (no change) 0 - 1.0 (all change)
-
-# Color adjustment in offset mode
-#hsv_offset_h: 0.0 # ratio: -1.0 (negative) - 0 (no change) - +1.0 (positive)
-#hsv_offset_s: 0.0 # ratio: -1.0 (negative) - 0 (no change) - +1.0 (positive)
-#hsv_offset_v: 0.0 # ratio: -1.0 (negative) - 0 (no change) - +1.0 (positive)
-
-# Quality adjustment options
-#noise: 0.125 # opacity. range: (none)  0 - 1.0 (only noise)
-#dequality: 0.2 # ratio. range: (none) 0 - 1.0 (loss all)
-
+# -----------------------------------------------------------
 # Dataloader options
-#data_length: # data length of train data. as blank, will be apply automatic length
-#file_checkers: 128 # number of file checker threads
-#loaders: 4 # number of dataloaders
-#subdivisions: 4 # number of divide batch size
-#queue_size: 4 # queue size of per dataloader
-#resize_method: contain # resize method. select from: contain, stretch
+# -----------------------------------------------------------
+# `data_length`
+#  - fix the iterations in training
+#  - blank or `null`: not fix
+#  - specific natural number: fix
+# `normalization_device`
+#  - where normalize data on
+#  - cpu: normalization on CPU
+#  - gpu: normalization on GPU
+# `file_checkers`
+#  - number of file scanners
+#  - an natural number
+# `loaders`:
+#  - number of dataloaders
+#  - set on your environment appropriately
+# `subdivisions`
+#  - divide number of batch
+#  - MUST be set aliquot number of batch size
+# `queue_size`
+#  - temporal memory area of each dataloader
+#  - 4 or over (under than 4 is NOT recommended)
+# `resize_method`
+#  - the way to resize method in preprocessing
+#  - contain: keep aspect ratio and use letterbox
+#  - stretch: fit input size and without letterbox
+# -----------------------------------------------------------
 
-# Datasets options
-#train_image: datasets/train # train images path
-#val_image: datasets/val # validation images path
+#data_length:
+#normalization_device: cpu
+#file_checkers: 16
+#loaders: 4
+#subdivisions: 4
+#queue_size: 4
+#resize_method: contain
 
 
+# -----------------------------------------------------------
+# Dataset option
+# -----------------------------------------------------------
+# `train_image`
+#  - set the path of train image
+# `label_image`
+#  - set the path of validation image
+# -----------------------------------------------------------
+
+#train_image: datasets/train
+#val_image: datasets/val
+
+
+# ===========================================================
 # TRAIN OPTIONS
-# Checkpoint path
-#checkpoint_path: runs # a root path of checkpoint
-#checkpoint_name: train # a name of checkpoint
+# -----------------------------------------------------------
+# Checkpoint options
+# -----------------------------------------------------------
+# `checkpoint_path`
+#  - root of checkpoints path
+# `checkpoint_name`
+#  - name of checkpoint
+# -----------------------------------------------------------
 
-# Training options
-#optimizer: SGD # optimizer
-#loss: CCE # loss function. select from: CCE (categorical crossentropy), MSE (mean squared error), MAE (mean average error), RMSE (rooted mean squared error)
-#learning_rate: 0.2 # learning rate
-#batch_size: 256 # batch size
-#patience: 50 # patience for epochs for early stopping
+#checkpoint_path: runs
+#checkpoint_name: train
+
+# -----------------------------------------------------------
+# Train parameters
+# -----------------------------------------------------------
+# `mixed_precision`
+#  - set the policy of mixed precision
+#  - float32 (default)
+#  - mixed_float16 (with float16)
+#  - mixed_bfloat16 (with bfloat16)
+# `optimizer`:
+#  - optimizer algorithm in training
+#  - select from: SGD, Adam, AdamW, etc...
+# `loss`:
+#  - loss function
+#  - select from: CCE(CategoricalCrossEntropy), MAE, MSE, RMSE
+# `learning_rate`
+#  - learning rate
+#  - an real number
+# `batch_size`
+#  - batch size
+#  - an natural number
+# `image_size`
+#  - image size of input and output
+#  - an natural number (multiply of 64)
+# `epochs`
+#  - maximum epochs in training
+#  - an natural number
+# `patience`
+#  - patience for early stopping
+#  - if it is set same to `epoch`, early stopping will be disabled
+# `warmup_epochs`
+#  - increase learning rate for epochs
+#  - if it is set to -1, it will be disabled
+# `warmup_lr`
+#  - start ratio of learning rate of warmup
+#  - an real number (lr * warmup_lr will be used for start learning rate)
+# `scheduler_type`
+#  - type of learning rate scheduler
+#  - select from: cosine, linear
+# `decay_start`
+#  - start point of epoch of decay learning rate
+#  - if it is set to -1, it will be disabled
+# `decay_lr`:
+#  - end ratio of learning rate of decay
+#  - an real number (lr * decay_lr will be used for end of learning rate)
+# `save_period`
+#  - frequency of save weights
+#  - if it is set to 0, it will be disabled
+# `model`
+#  - configuration file of model
+#  - select from cfg/models path or your own model's path
+# -----------------------------------------------------------
+
+#checkpoint_path: runs
+#checkpoint_name: train
+#optimizer: SGD
+#loss: CCE
+#learning_rate: 0.2
+#batch_size: 256
 #image_size: 224 # input size
-#epochs: 300 # epochs
-#mixed_precision: mixed_float16 # mixed precision policy. select from: float32, mixed_float16, mixed_bfloat16, etc...
-
-# Learning rate scheduler options
-#warmup_epochs: 10 # warmup length
+#epochs: 300
+#patience: 50
+#mixed_precision: mixed_float16
+#warmup_epochs: 10
 #warmup_lr: 0.001 # learing_rate * warmup_lr (in start)
 #scheduler_type: cosine
-#decay_lr: 0.01 # learning_rate * decay_lr (in end)
-#decay_start: 15 # decay start epoch
-
-# Model options
-#save_period: 0 # frequency of saving weights.
-#model: resnet/54.yaml # model configuration filename
+#decay_lr: 0.01 # learning_rate * decay_ratio (in end)
+#decay_start: 15
+#save_period: 0
+#model: resnet/54.yaml
