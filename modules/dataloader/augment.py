@@ -157,8 +157,6 @@ class DataAugment(multiprocessing.Process):
 
                 elif self.cfg["color_space"].lower() == "hsv":
                     image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-                
-                image = image
 
                 images[index] = image
                 labels[index][label] = 1

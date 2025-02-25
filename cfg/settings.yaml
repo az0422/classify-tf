@@ -19,6 +19,7 @@ noise: 0.125
 dequality: 0.2
 color_space: BGR
 data_length:
+normalization_device: cpu
 file_checkers: 128
 loaders: 4
 subdivisions: 4

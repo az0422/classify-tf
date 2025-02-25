@@ -154,20 +154,12 @@ class DataLoader(Sequence):
             images.append(image)
             labels.append(label)
         
-        images_np = np.vstack(images, dtype=np.float16) / 255.
-        labels_np = np.vstack(labels)
-
-        images_tf = tf.constant(images_np)
-        labels_tf = tf.constant(labels_np)
-
-        images_tf = tf.cast(images_tf, tf.float32)
-        labels_tf = tf.cast(labels_tf, tf.float32)
-
-        del (
-            images,
-            labels,
-            images_np,
-            labels_np,
-        )
+        if self.cfg["normalization_device"] == "gpu":
+            images_tf = tf.concat([tf.constant(image, dtype=tf.float32) / 255. for image in images], axis=0)
+            labels_tf = tf.concat([tf.constant(label, dtype=tf.float32) for label in labels], axis=0)
+        
+        else:
+            images_tf = tf.concat([tf.constant(image.astype(np.float32) / 255.) for image in images], axis=0)
+            labels_tf = tf.concat([tf.constant(label, dtype=tf.float32) for label in labels], axis=0)
         
         return images_tf, labels_tf
