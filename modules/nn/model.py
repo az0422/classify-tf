@@ -94,10 +94,21 @@ def parse_model(cfg, classes, image_size=None):
         else:
             depth = int(depth)
 
-        if type(index) is int:
-            index_ = index if index < 0 else index + 1
+        if type(index) in (int, str):
+            if index == "input":
+                index_ = 0
+            elif index >= 0:
+                index_ = index + 1
+            else:
+                index_ = index
         else:
-            index_ = [(i if i < 0 else i + 1) for i in index]
+            for ii in index:
+                if ii == "input":
+                    index_ = 0
+                elif ii >= 0:
+                    index_ = ii + 1
+                else:
+                    index_ = ii
 
         for i, arg in enumerate(args):
             try:

@@ -1,8 +1,8 @@
 width_multiple: 1.0
 depth_multiple: 1.0
 
-backbone:
- - [-1, 1, Conv, [64, 7, 2]]
+network:
+ - [input, 1, Conv, [64, 7, 2]]
  - [-1, 1, tf.keras.layers.MaxPooling2D, [2, 2, "valid"]]
  - [-1, 1, ResNet, [64]]
  - [-1, 1, Conv, [128, 3, 2]]
@@ -12,5 +12,4 @@ backbone:
  - [-1, 1, Conv, [512, 3, 2]]
  - [-1, 1, ResNet, [512]]
 
-head:
  - [-1, 1, ClassifyR, []]
