@@ -98,6 +98,12 @@
 #  - the way to resize method in preprocessing
 #  - contain: keep aspect ratio and use letterbox
 #  - stretch: fit input size and without letterbox
+# `buff_enable`
+#  - buffer enable of disable
+#  - select from: yes or no
+# `buff_size`
+#  - a number of size of buffer
+#  - 1 or over (only natural number)
 # -----------------------------------------------------------
 
 #data_length:
@@ -107,6 +113,8 @@
 #subdivisions: 4
 #queue_size: 4
 #resize_method: contain
+#buff_enable: no
+#buff_size: 16
 
 
 # -----------------------------------------------------------

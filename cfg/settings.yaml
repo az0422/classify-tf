@@ -24,6 +24,8 @@ file_checkers: 128
 loaders: 4
 subdivisions: 4
 queue_size: 4
+buff_enable: no
+buff_size: 16
 resize_method: contain
 train_image: datasets/train
 val_image: datasets/val

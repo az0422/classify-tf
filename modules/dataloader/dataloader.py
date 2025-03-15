@@ -13,6 +13,36 @@ from tensorflow.keras.utils import Sequence
 from .utils import load_filelist, resize_contain, resize_stretch
 from .augment import DataAugment
 
+class MakeBuffer(multiprocessing.Process):
+    def __init__(self, loaders: list[DataAugment], buff_size: int, subdivisions: int):
+        super().__init__()
+        self.loaders = loaders
+        self.queue = multiprocessing.Queue(buff_size)
+        self.subdivisions = subdivisions
+    
+    def run(self):
+        index = 0
+
+        while True:
+            images = []
+            labels = []
+
+            for _ in range(self.subdivisions):
+                image, label = self.loaders[index].getData()
+                index = (index + 1) % len(self.loaders)
+
+                images.append(image)
+                labels.append(label)
+            
+            self.queue.put([
+                np.concatenate(images, axis=0),
+                np.concatenate(labels, axis=0),
+            ])
+    
+    def getData(self):
+        return self.queue.get()
+
+
 class Loader(multiprocessing.Process):
     def __init__(self, images: list, classes: int, batch_size: int, cfg: dict,):
         super().__init__()
@@ -131,19 +161,27 @@ class DataLoader(Sequence):
                     cfg
                 ) for i in range(self.subdivisions)
             ]
+        
+        if self.cfg["buff_enable"]:
+            self.buff_manager = MakeBuffer(self.augments, self.cfg["queue_size"], self.subdivisions)
+        else:
+            self.buff_manager = None
     
     def startAugment(self):
         for augment in self.augments:
             augment.start()
+        
+        if self.buff_manager is not None:
+            self.buff_manager.start()
     
     def stopAugment(self):
+        if self.buff_manager is not None:
+            self.buff_manager.terminate()
+
         for augment in self.augments:
             augment.terminate()
     
-    def __len__(self):
-        return self.data_length
-    
-    def __getitem__(self, index=0):
+    def load_data(self):
         images = []
         labels = []
 
@@ -154,12 +192,23 @@ class DataLoader(Sequence):
             images.append(image)
             labels.append(label)
         
-        if self.cfg["normalization_device"] == "gpu":
-            images_tf = tf.concat([tf.constant(image, dtype=tf.float32) / 255. for image in images], axis=0)
-            labels_tf = tf.concat([tf.constant(label, dtype=tf.float32) for label in labels], axis=0)
+        return np.concatenate(images, axis=0), np.concatenate(labels, axis=0)
+
+    def __len__(self):
+        return self.data_length
+    
+    def __getitem__(self, index=0):
+        if self.buff_manager is not None:
+            images, labels = self.buff_manager.getData()
+        else:
+            images, labels = self.load_data()
+
+        if self.cfg["normalization_device"].lower() == "gpu":
+            images_tf = tf.constant(images, dtype=tf.float32) / 255.
+            labels_tf = tf.constant(labels, dtype=tf.float32)
         
         else:
-            images_tf = tf.concat([tf.constant(image.astype(np.float32) / 255.) for image in images], axis=0)
-            labels_tf = tf.concat([tf.constant(label, dtype=tf.float32) for label in labels], axis=0)
+            images_tf = tf.constant(images / 255., dtype=tf.float32)
+            labels_tf = tf.constant(labels, dtype=tf.float32)
         
         return images_tf, labels_tf
