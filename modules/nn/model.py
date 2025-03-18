@@ -44,7 +44,7 @@ from .modules import (
 def quantize_channels(channels):
     return math.ceil(channels / 8) * 8
 
-def parse_model(cfg, classes, image_size=None):
+def parse_model(cfg, classes, image_size=None, default_act=None):
     assert os.path.isfile(cfg) or os.path.isfile(os.path.join("cfg/models", cfg)), "Configration file of model was not found."
 
     if not os.path.isfile(cfg):
@@ -59,8 +59,8 @@ def parse_model(cfg, classes, image_size=None):
     depth_multiple = cfg["depth_multiple"]
     activation = cfg["activation"] if "activation" in cfg.keys() else None
 
-    if activation is not None:
-        act = layers.Activation(activation)
+    if activation is None:
+        act = layers.Activation("silu" if default_act is None else default_act)
     else:
         act = layers.Activation(activation)
     
