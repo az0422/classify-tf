@@ -57,13 +57,17 @@ def parse_model(cfg, classes, image_size=None):
 
     width_multiple = cfg["width_multiple"]
     depth_multiple = cfg["depth_multiple"]
-    activation = eval(cfg["activation"]) if "activation" in cfg.keys() else None
+    activation = cfg["activation"] if "activation" in cfg.keys() else None
 
     if activation is not None:
-        Conv.default_act[0] = activation
-        ConvTranspose.default_act[0] = activation
-        TemporalConv.default_act[0] = activation
-        FC.default_act[0] = activation
+        act = layers.Activation(activation)
+    else:
+        act = layers.Activation(activation)
+    
+    Conv.default_act = act
+    ConvTranspose.default_act = act
+    TemporalConv.default_act = act
+    FC.default_act = act
     
     layers_list = [layers.Input(shape=(image_size, image_size, 3))]
     channels = [3]

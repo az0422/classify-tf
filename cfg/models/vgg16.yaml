@@ -1,6 +1,6 @@
 width_multiple: 1.0
 depth_multiple: 1.0
-activation: tf.nn.relu
+activation: relu
 
 network:
  - [input, 1, Conv, [64, 3, 1]]

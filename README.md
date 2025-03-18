@@ -11,10 +11,7 @@ This project is a sandbox project! This projects will be used for experiments!
 * Train: `python3 train.py option=<configuration file (optional)>`
   - Used to obtain weights.
   - The `option` argument for indivisual training options.
-
-* Train resume: `python3 train.py resume=path/to/checkpoint_path/checkpotin_name`
-  - Used to resume training.
-
+  
 * Predict: `python3 classify.py weights=path/to/checkpoint_path/checkpoint_name image=path/to/image(s/dir) epoch=[best|last|<an epoch number>](optional) output_format=[csv|stdout](optional)`
 
 * Plot graph: `python3 plot.py path=path/to/checkpoint_path/checkpoint_name`
@@ -86,7 +83,7 @@ This project is a sandbox project! This projects will be used for experiments!
 
 ## Experiment
 ### Experimental Environment
-* CPU: AMD Ryzen 7900 @ 4.5GHz; 90W
+* CPU: AMD Ryzen 7900 @ 4.0GHz; 90W
 * Memory: DDR5 64GB
 * GPU: RTX 4060 Ti 16GB @ 2.5GHz; 130W x2
 * OS: Ubuntu 24.04 (docker image: nvidia/cuda:12.2.2-cudnn8-devel-ubuntu22.04)

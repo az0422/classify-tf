@@ -1,8 +1,9 @@
 width_multiple: 1.0
 depth_multiple: 1.0
+activation: relu
 
 network:
- - [-input, 1, Conv, [32, 3, 1]]
+ - [input, 1, Conv, [32, 3, 1]]
 
  - [-1, 1, tf.keras.layers.MaxPooling2D, [3, 2, "same"]]
  - [-1, 1, Conv, [64, 1, 1]]

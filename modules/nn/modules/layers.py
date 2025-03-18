@@ -3,7 +3,7 @@ from tensorflow.keras.layers import Conv2D, Conv1D, Conv2DTranspose, BatchNormal
 from tensorflow.keras.models import Sequential
 
 class FC(Layer):
-    default_act = [tf.nn.silu]
+    default_act = None
     def __init__(self, in_nodes, out_nodes, act=True):
         super().__init__()
         self.in_nodes = in_nodes
@@ -13,7 +13,7 @@ class FC(Layer):
         if type(act) is not bool:
             self.act = act
         elif act:
-            self.act = self.default_act[0]
+            self.act = self.default_act
         else:
             self.act = None
     
@@ -28,7 +28,7 @@ class FC(Layer):
         return self.act(y)
 
 class Conv(Layer):
-    default_act = [tf.nn.silu]
+    default_act = None
     def __init__(self, in_channels, out_channels, kernel, strides=1, padding="same", groups=1, act=True):
         super(Conv, self).__init__()
         self.in_channels = in_channels
@@ -38,7 +38,7 @@ class Conv(Layer):
         if type(act) is not bool:
             self.act = act
         elif act:
-            self.act = self.default_act[0]
+            self.act = self.default_act
         else:
             self.act = None
     
@@ -53,7 +53,7 @@ class Conv(Layer):
         return self.act(y)
 
 class ConvTranspose(Layer):
-    default_act = [tf.nn.silu]
+    default_act = None
     def __init__(self, in_channels, out_channels, kernel, strides=1, padding="valid", act=True):
         super().__init__()
         self.in_channels = in_channels
@@ -63,7 +63,7 @@ class ConvTranspose(Layer):
         if type(act) is not bool:
             self.act = act
         elif act:
-            self.act = self.default_act[0]
+            self.act = self.default_act
         else:
             self.act = None
     
@@ -78,7 +78,7 @@ class ConvTranspose(Layer):
         return self.act(y)
 
 class TemporalConv(Layer):
-    default_act = [tf.nn.silu]
+    default_act = None
     def __init__(self, in_channels, out_channels, kernel, strides=1, padding="same", groups=1, act=True):
         super(Conv, self).__init__()
         self.in_channels = in_channels
@@ -88,7 +88,7 @@ class TemporalConv(Layer):
         if type(act) is not bool:
             self.act = act
         elif act:
-            self.act = self.default_act[0]
+            self.act = self.default_act
         else:
             self.act = None
     
