@@ -42,7 +42,7 @@ def model_compile(cfg, model):
     learning_rate = cfg["learning_rate"]
 
     model.compile(
-        optimizer=optimizer(learning_rate=learning_rate),
+        optimizer=optimizer(learning_rate=learning_rate, gradient_accumulation_steps=cfg["subdivisions"]),
         loss=loss(),
         metrics=['accuracy']
     )
@@ -103,7 +103,7 @@ def dump_image(images, labels, path, name):
     filename = os.path.join(path, name + "-%d-%08d.png")
     for i, (image, label) in enumerate(zip(images, labels)):
         label = np.argmax(label)
-        image = image.astype(np.float32)
+        image = np.round(image).astype(np.uint8)
         cv2.imwrite(filename % (label, i), image)
 
 def create_dataloaders(cfg):
@@ -190,6 +190,8 @@ def main(cfg, checkpoint, epoch, resume):
     
     cfg["classes"] = classes
     yaml.dump(cfg, open(os.path.join(checkpoint_path, "cfg.yaml"), "w"))
+
+    cfg["batch_size"] = cfg["batch_size"] // cfg["subdivisions"]
 
     if checkpoint is not None:
         print("Load weights")

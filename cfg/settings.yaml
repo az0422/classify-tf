@@ -6,7 +6,7 @@ crop_method: resize
 flip_vertical: 0.5
 flip_horizontal: 0.5
 rotate_degree: 0
-zoom: 4
+zoom: 1
 translate_vertical: 0.25
 translate_horizontal: 0.25
 hsv_h: 0.15
@@ -15,17 +15,16 @@ hsv_v: 0.50
 hsv_offset_h: 0.0
 hsv_offset_s: 0.0
 hsv_offset_v: 0.0
-noise: 0.125
+noise:
+  mean: 0
+  std: 15
 dequality: 0.2
 color_space: BGR
 data_length:
 normalization_device: cpu
 file_checkers: 128
 loaders: 4
-subdivisions: 4
 queue_size: 4
-buff_enable: no
-buff_size: 16
 resize_method: contain
 train_image: datasets/train
 val_image: datasets/val
@@ -36,7 +35,8 @@ checkpoint_name: train
 optimizer: SGD
 loss: CCE
 learning_rate: 0.2
-batch_size: 256
+batch_size: 512
+subdivisions: 4
 image_size: 224 # input size
 epochs: 300
 patience: 50

@@ -4,7 +4,7 @@ train/
 dataloader-test/
 dataloader-test.py
 test.py
-.venv/
+.venv*
 *.tar
 *.tar.gz
 *.tgz

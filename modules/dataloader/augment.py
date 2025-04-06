@@ -102,16 +102,12 @@ class DataAugment(multiprocessing.Process):
         return image
     
     def _dequality(self, image):
-        noise = np.random.normal(0, 25, image.shape)
-        noise = (noise - noise.min()) / (noise.max() - noise.min()) * 2 - 1
-        noise *= 255.
-        
-        opacity = np.random.rand() * self.cfg["noise"]
+        noise = np.random.normal(self.cfg["noise"]["mean"], self.cfg["noise"]["std"], image.shape)
         dequality = 1 - np.random.rand() * self.cfg["dequality"]
 
-        image = image.astype(np.int32) + np.round(noise * opacity).astype(np.int32)
-        image[image > 255] = 255
-        image[image < 0] = 0
+        image = image.astype(np.int32) + np.round(noise).astype(np.int32)
+        image = np.clip(image, 0, 255)
+        image = image.astype(np.uint8)
 
         if dequality > 0:
             fmt, qlt = random.choices(LOSS_FORMAT)[0]
