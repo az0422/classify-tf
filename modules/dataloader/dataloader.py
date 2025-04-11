@@ -34,19 +34,7 @@ class Loader(multiprocessing.Process):
         raise Exception("invalid resize method %s" % self.cfg["resize_method"])
     
     def run(self):
-        index = 0
-
         while not self.stop:
-            if index == 0:
-                random.shuffle(self.images)
-            
-            images_list = self.images[index * self.batch_size:(index + 1) * self.batch_size]
-            index = (index + 1) % self.data_length
-
-            if len(images_list) < self.batch_size:
-                need = self.batch_size - len(images_list)
-                images_list.extend(self.images[:need])
-
             images = np.zeros(
                 [
                     self.batch_size,
@@ -62,6 +50,8 @@ class Loader(multiprocessing.Process):
                     self.classes
                 ], dtype=np.uint8
             )
+
+            images_list = [self.images[index] for index in range(self.batch_size)]
 
             for i, (image, label) in enumerate(images_list):
                 if image.endswith(".npy"):
@@ -116,19 +106,17 @@ class DataLoader(Sequence):
                     random.randrange(-2**31, 2**31 - 1),
                     self.images,
                     self.classes,
-                    self.cfg["batch_size"] // self.subdivisions,
+                    self.cfg["batch_size"],
                     cfg
                 ) for _ in range(self.cfg["loaders"])
             ]
 
         else:
-            length = len(images) // self.subdivisions
-            random.shuffle(self.images)
             self.augments = [
                 Loader(
-                    self.images[i * length:(i + 1) * length],
+                    self.images,
                     self.classes,
-                    self.cfg["batch_size"] // self.subdivisions,
+                    self.cfg["batch_size"],
                     cfg
                 ) for i in range(self.subdivisions)
             ]
