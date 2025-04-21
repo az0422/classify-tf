@@ -16,8 +16,10 @@ hsv_offset_h: 0.0
 hsv_offset_s: 0.0
 hsv_offset_v: 0.0
 noise:
-  mean: 0
-  std: 15
+- min: 0
+  max: 20
+- min: 0
+  max: 0
 dequality: 0.2
 color_space: BGR
 data_length:

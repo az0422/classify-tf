@@ -15,14 +15,13 @@ from .augment import DataAugment
 
 
 class Loader(multiprocessing.Process):
-    def __init__(self, images: list, classes: int, batch_size: int, cfg: dict,):
+    def __init__(self, images: list, classes: int, cfg: dict,):
         super().__init__()
         self.images = images
         self.queue = multiprocessing.Queue(cfg["queue_size"])
         self.cfg = cfg
         self.classes = classes
         self.data_length = len(images)
-        self.batch_size = batch_size
         self.color_space = {"bgr": None, "rgb": cv2.COLOR_BGR2RGB, "hsv": cv2.COLOR_BGR2HSV}[cfg["color_space"].lower()]
         self.stop = False
     
@@ -35,25 +34,11 @@ class Loader(multiprocessing.Process):
     
     def run(self):
         while not self.stop:
-            images = np.zeros(
-                [
-                    self.batch_size,
-                    self.cfg["image_size"],
-                    self.cfg["image_size"],
-                    3,
-                ], dtype=np.uint8
-            )
-            
-            labels = np.zeros(
-                [
-                    self.batch_size,
-                    self.classes
-                ], dtype=np.uint8
-            )
+            images = []
+            labels = []
+            images_list = [random.choice(self.images) for _ in range(self.cfg["batch_size"])]
 
-            images_list = [self.images[index] for index in range(self.batch_size)]
-
-            for i, (image, label) in enumerate(images_list):
+            for image, label in images_list:
                 if image.endswith(".npy"):
                     image = np.load(image)
                 else:
@@ -64,15 +49,16 @@ class Loader(multiprocessing.Process):
                 if self.color_space is not None:
                     image = cv2.cvtColor(image, self.color_space)
                 
-                images[i] = image
-                labels[i][label] = 1
+                label_np = np.zeros([self.classes], dtype=np.uint8)
+                label_np[label] = 1
+
+                images.append(image[None, ...])
+                labels.append(label_np[None, ...])
+            
+            images = np.concatenate(images, axis=0)
+            labels = np.concatenate(labels, axis=0)
             
             self.queue.put([images, labels])
-
-            del (
-                images,
-                labels,
-            )
     
     def getData(self):
         return self.queue.get()
@@ -98,15 +84,12 @@ class DataLoader(Sequence):
         self.augment_rotate = 0
         self.data_index = 0
 
-        self.subdivisions = self.cfg["subdivisions"] if self.cfg["subdivisions"] < self.cfg["batch_size"] else self.cfg["batch_size"]
-
         if augment_flag:
             self.augments = [
                 DataAugment(
                     random.randrange(-2**31, 2**31 - 1),
                     self.images,
                     self.classes,
-                    self.cfg["batch_size"],
                     cfg
                 ) for _ in range(self.cfg["loaders"])
             ]
@@ -116,9 +99,8 @@ class DataLoader(Sequence):
                 Loader(
                     self.images,
                     self.classes,
-                    self.cfg["batch_size"],
                     cfg
-                ) for i in range(self.subdivisions)
+                ) for i in range(self.cfg["loaders"])
             ]
     
     def startAugment(self):

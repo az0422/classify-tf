@@ -12,7 +12,7 @@ LOSS_FORMAT = [
 ]
 
 class DataAugment(multiprocessing.Process):
-    def __init__(self, seed, images, classes, batch_size, cfg):
+    def __init__(self, seed, images, classes, cfg):
         super().__init__()
         np.random.seed((~seed) & 0xFFFFFFFF)
         random.seed(seed if np.random.rand() > 0.5 else seed * -1)
@@ -23,7 +23,6 @@ class DataAugment(multiprocessing.Process):
         self.stop = False
 
         self.queue = multiprocessing.Queue(self.cfg["queue_size"])
-        self.batch_size = batch_size
 
     def _resize(self, image):
         if self.cfg["resize_method"] in ("default", "contain"):
@@ -80,19 +79,19 @@ class DataAugment(multiprocessing.Process):
     
     def _hsv(self, image):
         hsv = np.clip(
-            np.array([self.cfg["hsv_h"], self.cfg["hsv_s"], self.cfg["hsv_v"]], dtype=np.float32),
+            np.array([self.cfg["hsv_h"], self.cfg["hsv_s"], self.cfg["hsv_v"]], dtype=np.float16),
             0.0,
             1.0
         )
         hsv_offset = np.clip(
-            np.array([self.cfg["hsv_offset_h"], self.cfg["hsv_offset_s"], self.cfg["hsv_offset_v"]], dtype=np.float32),
+            np.array([self.cfg["hsv_offset_h"], self.cfg["hsv_offset_s"], self.cfg["hsv_offset_v"]], dtype=np.float16),
             -1.0,
             1.0,
         )
 
         hsv = np.random.rand(3) * hsv * 2 - hsv + 1.
 
-        image_hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV).astype(np.float32)
+        image_hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV).astype(np.float16)
         image_hsv = image_hsv + image_hsv * hsv_offset
         image_hsv = image_hsv * hsv
         image_hsv[..., 0] = image_hsv[..., 0] % 180
@@ -101,13 +100,16 @@ class DataAugment(multiprocessing.Process):
 
         return image
     
-    def _dequality(self, image):
-        noise = np.random.normal(self.cfg["noise"]["mean"], self.cfg["noise"]["std"], image.shape)
-        dequality = 1 - np.random.rand() * self.cfg["dequality"]
+    def _noise(self, image, cfg):
+        noise_std = np.random.rand() * (cfg["max"] - cfg["min"]) + cfg["min"]
+        noise = np.random.normal(0, noise_std, image.shape)
+        image = image.astype(np.int16) + noise.astype(np.int16)
+        image = np.clip(image, 0, 255).astype(np.uint8)
 
-        image = image.astype(np.int32) + np.round(noise).astype(np.int32)
-        image = np.clip(image, 0, 255)
-        image = image.astype(np.uint8)
+        return image
+    
+    def _dequality(self, image):
+        dequality = 1 - np.random.rand() * self.cfg["dequality"]
 
         if dequality > 0:
             fmt, qlt = random.choices(LOSS_FORMAT)[0]
@@ -118,24 +120,11 @@ class DataAugment(multiprocessing.Process):
     
     def run(self):
         while True:
-            taked_indices = [random.randrange(0, len(self.images) - 1) for _ in range(self.batch_size)]
-            images = np.zeros(
-                [
-                    self.batch_size,
-                    self.cfg["image_size"],
-                    self.cfg["image_size"],
-                    3
-                ], dtype=np.uint8
-            )
-            labels = np.zeros(
-                [
-                    self.batch_size,
-                    self.classes,
-                ], dtype=np.uint8
-            )
+            images = []
+            labels = []
+            images_list = [random.choice(self.images) for _ in range(self.cfg["batch_size"])]
 
-            for index, taked_index in enumerate(taked_indices):
-                image, label = self.images[taked_index]
+            for image, label in images_list:
                 if image.endswith(".npy"):
                     image = np.load(image)
                 else:
@@ -146,17 +135,27 @@ class DataAugment(multiprocessing.Process):
                 image = self._flip(image)
                 image = self._translate(image)
                 image = self._hsv(image)
+                image = self._noise(image, self.cfg["noise"][0])
                 image = self._dequality(image)
+                
+                if len(self.cfg["noise"]) == 2:
+                    image = self._noise(image, self.cfg["noise"][1])
 
                 if self.cfg["color_space"].lower() == "rgb":
                     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
                 elif self.cfg["color_space"].lower() == "hsv":
                     image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-
-                images[index] = image
-                labels[index][label] = 1
-
+                
+                label_np = np.zeros([self.classes], dtype=np.uint8)
+                label_np[label] = 1
+                
+                images.append(image[None, ...])
+                labels.append(label_np[None, ...])
+            
+            images = np.concatenate(images, axis=0)
+            labels = np.concatenate(labels, axis=0)
+            
             self.queue.put([images, labels])
         
     def getData(self):
