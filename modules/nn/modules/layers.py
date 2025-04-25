@@ -2,62 +2,12 @@ import tensorflow as tf
 from tensorflow.keras.layers import Conv2D, Conv1D, Conv2DTranspose, BatchNormalization, Layer, Dense
 from tensorflow.keras.models import Sequential
 
-class FC(Layer):
+class BaseLayer(Layer):
     default_act = None
-    def __init__(self, in_nodes, out_nodes, act=True):
-        super().__init__()
-        self.in_nodes = in_nodes
-        self.dense = Dense(out_nodes, use_bias=False)
-        self.bn = BatchNormalization()
-
-        if type(act) is not bool:
-            self.act = act
-        elif act:
-            self.act = self.default_act
-        else:
-            self.act = None
-    
-    def build(self, input_shape):
-        assert input_shape[-1] == self.in_nodes
-        super().build(input_shape)
-    
-    def call(self, x, training=None):
-        y = self.bn(self.dense(x), training=training)
-        if self.act is None:
-            return y
-        return self.act(y)
-
-class Conv(Layer):
-    default_act = None
-    def __init__(self, in_channels, out_channels, kernel, strides=1, padding="same", groups=1, act=True):
-        super(Conv, self).__init__()
-        self.in_channels = in_channels
-        self.conv = Conv2D(out_channels, kernel, strides=strides, padding=padding, groups=groups, use_bias=False)
-        self.bn = BatchNormalization()
-
-        if type(act) is not bool:
-            self.act = act
-        elif act:
-            self.act = self.default_act
-        else:
-            self.act = None
-    
-    def build(self, input_shape):
-        assert input_shape[-1] == self.in_channels
-        super().build(input_shape)
-    
-    def call(self, x, training=None):
-        y = self.bn(self.conv(x), training=training)
-        if self.act is None:
-            return y
-        return self.act(y)
-
-class ConvTranspose(Layer):
-    default_act = None
-    def __init__(self, in_channels, out_channels, kernel, strides=1, padding="valid", act=True):
+    def __init__(self, in_channels, act=True):
         super().__init__()
         self.in_channels = in_channels
-        self.conv = Conv2DTranspose(out_channels, kernel, strides=strides, padding=padding, use_bias=False)
+        self.m = None
         self.bn = BatchNormalization()
 
         if type(act) is not bool:
@@ -72,35 +22,28 @@ class ConvTranspose(Layer):
         super().build(input_shape)
     
     def call(self, x, training=None):
-        y = self.bn(self.conv(x), training=training)
+        if self.m is None:
+            raise NotImplementedError
+        
+        y = self.bn(self.m(x), training=training)
         if self.act is None:
             return y
         return self.act(y)
 
-class TemporalConv(Layer):
-    default_act = None
-    def __init__(self, in_channels, out_channels, kernel, strides=1, padding="same", groups=1, act=True):
-        super(Conv, self).__init__()
-        self.in_channels = in_channels
-        self.conv = Conv1D(out_channels, kernel, strides=strides, padding=padding, groups=groups, use_bias=False)
-        self.bn = BatchNormalization()
+class FC(BaseLayer):
+    def __init__(self, in_channels, out_channels, act=True):
+        super().__init__(in_channels, act)
+        self.m = Dense(out_channels)
+    
+class Conv(BaseLayer):
+    def __init__(self, in_channels, out_channels, kernel, strides=1, padding="same", dilations=1, act=True):
+        super().__init__(in_channels, act)
+        self.m = Conv2D(out_channels, kernel, strides, padding=padding, dilation_rate=dilations, use_bias=False)
 
-        if type(act) is not bool:
-            self.act = act
-        elif act:
-            self.act = self.default_act
-        else:
-            self.act = None
-    
-    def build(self, input_shape):
-        assert input_shape[-1] == self.in_channels
-        super().build(input_shape)
-    
-    def call(self, x, training=None):
-        y = self.bn(self.conv(x), training=training)
-        if self.act is None:
-            return y
-        return self.act(y)
+class ConvTranspose(BaseLayer):
+    def __init__(self, in_channels, out_channels, kernel, strides=1, padding="same", act=True):
+        super().__init__(in_channels, act)
+        self.m = Conv2DTranspose(out_channels, kernel, strides, padding=padding, use_bias=False)
 
 class Shortcut(Layer):
     def __init__(self):

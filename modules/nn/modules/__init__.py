@@ -6,7 +6,6 @@ layers_dict = {
     "FC": FC,
     "Conv": Conv,
     "ConvTranspose": ConvTranspose,
-    "TemporalConv": TemporalConv,
     "Shortcut": Shortcut,
     "Concat": Concat,
     "Reshape": Reshape,

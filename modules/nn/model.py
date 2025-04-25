@@ -13,10 +13,10 @@ from .utils import calc_flops
 
 from .modules import (
     layers_dict,
+    BaseLayer,
     FC,
     Conv,
     ConvTranspose,
-    TemporalConv,
     Shortcut,
     Concat,
     Reshape,
@@ -60,14 +60,9 @@ def parse_model(cfg, classes, image_size=None, default_act=None):
     activation = cfg["activation"] if "activation" in cfg.keys() else None
 
     if activation is None:
-        act = layers.Activation("silu" if default_act is None else default_act)
+        BaseLayer.default_act = layers.Activation("silu" if default_act is None else default_act)
     else:
-        act = layers.Activation(activation)
-    
-    Conv.default_act = act
-    ConvTranspose.default_act = act
-    TemporalConv.default_act = act
-    FC.default_act = act
+        BaseLayer.default_act = layers.Activation(activation)
     
     layers_list = [layers.Input(shape=(image_size, image_size, 3))]
     channels = [3]
@@ -125,7 +120,6 @@ def parse_model(cfg, classes, image_size=None, default_act=None):
             FC,
             Conv,
             ConvTranspose,
-            TemporalConv,
 
             SEBlock,
             CBAM,
