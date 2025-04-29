@@ -1,17 +1,17 @@
 import tensorflow as tf
-from tensorflow.keras.layers import Conv2D, Conv1D, Conv2DTranspose, BatchNormalization, Layer, Dense
+from tensorflow.keras.layers import Conv2D, Conv1D, Conv2DTranspose, BatchNormalization, Layer, Dense, Activation
 from tensorflow.keras.models import Sequential
 
 class BaseLayer(Layer):
     default_act = None
-    def __init__(self, in_channels, act=True):
+    def __init__(self, in_channels, act=True, bn=True):
         super().__init__()
         self.in_channels = in_channels
         self.m = None
-        self.bn = BatchNormalization()
+        self.bn = BatchNormalization() if bn else None
 
-        if type(act) is not bool:
-            self.act = act
+        if type(act) is str:
+            self.act = Activation(act)
         elif act:
             self.act = self.default_act
         else:
@@ -25,24 +25,28 @@ class BaseLayer(Layer):
         if self.m is None:
             raise NotImplementedError
         
-        y = self.bn(self.m(x), training=training)
+        y = self.m(x, training=training)
+
+        if self.bn is not None:
+            y = self.bn(y, training=training)
+
         if self.act is None:
             return y
         return self.act(y)
 
 class FC(BaseLayer):
-    def __init__(self, in_channels, out_channels, act=True):
-        super().__init__(in_channels, act)
+    def __init__(self, in_channels, out_channels, act=True, bn=True):
+        super().__init__(in_channels, act, bn)
         self.m = Dense(out_channels)
-    
+
 class Conv(BaseLayer):
-    def __init__(self, in_channels, out_channels, kernel, strides=1, padding="same", dilations=1, act=True):
-        super().__init__(in_channels, act)
+    def __init__(self, in_channels, out_channels, kernel, strides=1, padding="same", dilations=1, act=True, bn=True):
+        super().__init__(in_channels, act, bn)
         self.m = Conv2D(out_channels, kernel, strides, padding=padding, dilation_rate=dilations, use_bias=False)
 
 class ConvTranspose(BaseLayer):
-    def __init__(self, in_channels, out_channels, kernel, strides=1, padding="same", act=True):
-        super().__init__(in_channels, act)
+    def __init__(self, in_channels, out_channels, kernel, strides=1, padding="same", act=True, bn=True):
+        super().__init__(in_channels, act, bn)
         self.m = Conv2DTranspose(out_channels, kernel, strides, padding=padding, use_bias=False)
 
 class Shortcut(Layer):
