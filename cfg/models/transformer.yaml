@@ -1,0 +1,8 @@
+width_multiple: 1.0
+depth_multiple: 1.0
+
+network:
+ - [-1, 1, ConvPatchPointEmbedding, [16]]
+ - [-1, 8, ConvTransformer, [32]]
+
+ - [-1, 1, ClassifyR, []]

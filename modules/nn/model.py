@@ -39,6 +39,9 @@ from .modules import (
 
     Classify,
     ClassifyR,
+
+    ConvTransformer,
+    ConvPatchPointEmbedding,
 )
 
 def quantize_channels(channels):
@@ -192,6 +195,22 @@ def parse_model(cfg, classes, image_size=None, default_act=None):
             args.insert(1, classes)
             channels.append(classes)
         
+        elif layer is ConvTransformer:
+            ch = channels[index_]
+            args.insert(0, ch)
+            channels.append(ch)
+        
+        elif layer is ConvPatchPointEmbedding:
+            ch = channels[index_]
+            args.insert(0, ch)
+
+            if len(args) <= 1:
+                out_ch = ch * (16 ** 2)
+            else:
+                out_ch = ch * (args[1] ** 2)
+            
+            channels.append(out_ch)
+
         else:
             ch = channels[index_]
             channels.append(ch)

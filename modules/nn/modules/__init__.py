@@ -32,4 +32,7 @@ layers_dict = {
 
     "Classify": Classify,
     "ClassifyR": ClassifyR,
+
+    "ConvTransformer": ConvTransformer,
+    "ConvPatchPointEmbedding": ConvPatchPointEmbedding,
 }
