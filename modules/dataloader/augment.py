@@ -12,7 +12,7 @@ LOSS_FORMAT = [
 ]
 
 class DataAugment(multiprocessing.Process):
-    def __init__(self, seed, images, classes, cfg):
+    def __init__(self, seed, images, classes, cfg, augment=True):
         super().__init__()
         np.random.seed((~seed) & 0xFFFFFFFF)
         random.seed(seed if np.random.rand() > 0.5 else seed * -1)
@@ -20,7 +20,7 @@ class DataAugment(multiprocessing.Process):
         self.images = images
         self.classes = classes
         self.cfg = cfg
-        self.stop = False
+        self.augment = augment
 
         self.queue = multiprocessing.Queue(self.cfg["queue_size"])
 
@@ -100,9 +100,12 @@ class DataAugment(multiprocessing.Process):
 
         return image
     
-    def _noise(self, image, cfg):
-        noise_std = np.random.rand() * (cfg["max"] - cfg["min"]) + cfg["min"]
-        noise = np.random.normal(0, noise_std, image.shape)
+    def _noise(self, image):
+        noise_cfg = self.cfg["noise"]
+        noise_mean = np.random.rand() * abs(noise_cfg["mean"]) * 2 - abs(noise_cfg["mean"])
+        noise_std = np.random.rand() * (noise_cfg["std"][1] - noise_cfg["std"][0]) + noise_cfg["std"][0]
+
+        noise = np.random.normal(noise_mean, noise_std, image.shape)
         image = image.astype(np.int16) + noise.astype(np.int16)
         image = np.clip(image, 0, 255).astype(np.uint8)
 
@@ -131,15 +134,14 @@ class DataAugment(multiprocessing.Process):
                     image = cv2.imread(image, cv2.IMREAD_COLOR)
                 
                 image = self._resize(image)
-                image = self._crop(image)
-                image = self._flip(image)
-                image = self._translate(image)
-                image = self._hsv(image)
-                image = self._noise(image, self.cfg["noise"][0])
-                image = self._dequality(image)
-                
-                if len(self.cfg["noise"]) == 2:
-                    image = self._noise(image, self.cfg["noise"][1])
+
+                if self.augment:
+                    image = self._crop(image)
+                    image = self._flip(image)
+                    image = self._translate(image)
+                    image = self._hsv(image)
+                    image = self._noise(image)
+                    image = self._dequality(image)
 
                 if self.cfg["color_space"].lower() == "rgb":
                     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)

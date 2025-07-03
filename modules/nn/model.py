@@ -39,15 +39,19 @@ from .modules import (
 
     Classify,
     ClassifyR,
+    ClassifyS,
+    CombineOutput,
 
     ConvTransformer,
     ConvPatchPointEmbedding,
+    ConvPositionalEncoding,
+    ConvMultiHeadAttention,
 )
 
 def quantize_channels(channels):
     return math.ceil(channels / 8) * 8
 
-def parse_model(cfg, classes, image_size=None, default_act=None):
+def parse_model(cfg, classes, image_size=None, aux=True, default_act=None):
     assert os.path.isfile(cfg) or os.path.isfile(os.path.join("cfg/models", cfg)), "Configration file of model was not found."
 
     if not os.path.isfile(cfg):
@@ -95,6 +99,8 @@ def parse_model(cfg, classes, image_size=None, default_act=None):
             depth = [math.ceil(d * depth_multiple) if type(d) is int else int(d) for d in depth]
         else:
             depth = int(depth)
+        
+        index_ = None
 
         if type(index) in (int, str):
             if index == "input":
@@ -104,13 +110,14 @@ def parse_model(cfg, classes, image_size=None, default_act=None):
             else:
                 index_ = index
         else:
+            index_ = []
             for ii in index:
                 if ii == "input":
-                    index_ = 0
+                    index_.append(0)
                 elif ii >= 0:
-                    index_ = ii + 1
+                    index_.append(ii + 1)
                 else:
-                    index_ = ii
+                    index_.append(ii)
 
         for i, arg in enumerate(args):
             try:
@@ -139,6 +146,8 @@ def parse_model(cfg, classes, image_size=None, default_act=None):
             CSPResNet2L2C,
             CSPResNet2L3C,
             CSPSEResNet,
+
+            ConvPositionalEncoding,
         ):
             args.insert(0, channels[index_])
             args[1] = quantize_channels(args[1] * width_multiple)
@@ -189,7 +198,7 @@ def parse_model(cfg, classes, image_size=None, default_act=None):
             ch = args[0][-1]
             channels.append(ch)
 
-        elif layer in (Classify, ClassifyR):
+        elif layer in (Classify, ClassifyR, ClassifyS):
             ch = channels[index_]
             args.insert(0, ch)
             args.insert(1, classes)
@@ -210,6 +219,17 @@ def parse_model(cfg, classes, image_size=None, default_act=None):
                 out_ch = ch * (args[1] ** 2)
             
             channels.append(out_ch)
+        
+        elif layer in (ConvMultiHeadAttention,):
+            ch = [channels[i] for i in index_]
+            args.insert(0, ch)
+
+            channels.append(args[1])
+        
+        elif layer is CombineOutput:
+            args.append(aux)
+            ch = channels[index_[0]]
+            channels.append(ch)
 
         else:
             ch = channels[index_]
@@ -234,13 +254,17 @@ def parse_model(cfg, classes, image_size=None, default_act=None):
     return layers_list, layer_info, cfg_str
 
 class ClassifyModel(Model):
-    def __init__(self, cfg, classes, image_size=None, name="classify", **kwargs):
-        self.layers_list, self.layer_info, self.cfg = parse_model(cfg, classes, image_size)
+    def __init__(self, cfg, classes, image_size=None, aux=True, name="classify", **kwargs):
+        self.layers_list, self.layer_info, self.cfg = parse_model(cfg, classes, image_size, aux)
 
-        super(ClassifyModel, self).__init__(self.layers_list[0], self.layers_list[-1], name=name, **kwargs)
+        super().__init__(self.layers_list[0], self.layers_list[-1], name=name, **kwargs)
 
         print("Total parameters: %.4f M" % (self.count_params() / 1e+6))
         print("Total FLOPs: %.4f GFLOPs per image" % (calc_flops(self) / 1e+9))
 
     def getConfig(self):
         return self.cfg
+    
+    def predict(self, x, **kwargs):
+        out = super().predict(x, **kwargs)
+        return out

@@ -37,3 +37,28 @@ class ClassifyR(Layer):
     
     def call(self, x, training=None):
         return self.m(x, training=training)
+    
+class ClassifyS(Layer):
+    def __init__(self, in_channels, classes):
+        super().__init__()
+
+        self.m = Sequential([
+            GlobalAveragePooling2D(),
+            Dense(classes, activation=tf.nn.softmax, dtype=tf.float32)
+        ])
+    
+    def call(self, x, training=None):
+        return self.m(x, training=training)
+
+class CombineOutput(Layer):
+    def __init__(self, aux=True):
+        super().__init__()
+        self.aux = aux
+
+    def call(self, x):
+        x = [tf.expand_dims(xx, axis=1) for xx in x]
+        x = tf.concat(x, axis=1)
+
+        if self.aux:
+            return x
+        return x[:, -1]

@@ -15,7 +15,7 @@ from tensorflow.keras.callbacks import EarlyStopping
 from modules.utils import parse_cfg, apply_local_cfg
 from modules.nn.model import ClassifyModel
 from modules.nn.callbacks import SaveCheckpoint, Scheduler, GarbageCollect
-from modules.nn.losses import MSE, MAE, RMSE
+from modules.nn.losses import MSE, MAE, RMSE, AuxiliaryCategoricalCrossEntropy
 from modules.dataloader import DataLoader
 
 def make_checkpoint_path(cfg):
@@ -32,18 +32,24 @@ def make_checkpoint_path(cfg):
 def model_compile(cfg, model):
     optimizer_dict = {"adam": Adam, "adadelta": Adadelta, "adagrad": Adagrad, "adamw": AdamW, "adamax": Adamax,
                       "ftrl": Ftrl, "lion": Lion, "nadam": Nadam, "rmsprop": RMSprop, "sgd": SGD}
-    loss_dict = {"mse": MSE, "rmse": RMSE, "mae": MAE, "cce": CategoricalCrossentropy}
+    loss_dict = {"mse": MSE, "rmse": RMSE, "mae": MAE, "cce": CategoricalCrossentropy, "auxcce": AuxiliaryCategoricalCrossEntropy}
 
     assert cfg["optimizer"].lower() in optimizer_dict.keys(), "Invalid optimizer"
     assert cfg["loss"].lower() in loss_dict.keys(), "Invalid loss function"
+    assert cfg["batch_size"] % cfg["subdivisions"] == 0, "Invalid subdivisions"
 
     optimizer = optimizer_dict[cfg["optimizer"].lower()]
     loss = loss_dict[cfg["loss"].lower()]
     learning_rate = cfg["learning_rate"]
 
+    if cfg["loss_args"] is not None:
+        loss = loss(*cfg["loss_args"])
+    else:
+        loss = loss()
+
     model.compile(
-        optimizer=optimizer(learning_rate=learning_rate, gradient_accumulation_steps=cfg["subdivisions"]),
-        loss=loss(),
+        optimizer=optimizer(learning_rate=learning_rate, gradient_accumulation_steps=(cfg["subdivisions"] if cfg["subdivisions"] not in (None, 1, 0, -1) else None)),
+        loss=loss,
         metrics=['accuracy']
     )
 
@@ -106,9 +112,13 @@ def dump_image(images, labels, path, name):
         image = np.round(image).astype(np.uint8)
         cv2.imwrite(filename % (label, i), image)
 
-def create_dataloaders(cfg):
-    dataloader = DataLoader(cfg["train_image"], cfg, True)
-    dataloaderval = DataLoader(cfg["val_image"], cfg, False)
+def create_dataloaders(cfg, model_output_shape):
+    aux = 1
+    if len(model_output_shape) == 3:
+        aux = model_output_shape[1]
+
+    dataloader = DataLoader(cfg["train_image"], cfg, aux, True)
+    dataloaderval = DataLoader(cfg["val_image"], cfg, aux, False)
 
     dataloader.startAugment()
     dataloaderval.startAugment()
@@ -198,7 +208,7 @@ def main(cfg, checkpoint, epoch, resume):
         model, last_epoch = load_weights(cfg, model, checkpoint, epoch)
 
     print("Create data loaders")
-    dataloader, dataloaderval = create_dataloaders(cfg)
+    dataloader, dataloaderval = create_dataloaders(cfg, model.outputs[0].shape)
 
     print("Train start")
     train(model, dataloader, dataloaderval, cfg, last_epoch)

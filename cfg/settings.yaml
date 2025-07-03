@@ -16,10 +16,8 @@ hsv_offset_h: 0.0
 hsv_offset_s: 0.0
 hsv_offset_v: 0.0
 noise:
-- min: 0
-  max: 20
-- min: 0
-  max: 0
+  mean: 0
+  std: [0, 20]
 dequality: 0.2
 color_space: BGR
 data_length:
@@ -36,6 +34,7 @@ checkpoint_path: runs
 checkpoint_name: train
 optimizer: SGD
 loss: CCE
+loss_args: 
 learning_rate: 0.2
 batch_size: 512
 subdivisions: 4

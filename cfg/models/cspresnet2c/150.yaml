@@ -6,10 +6,10 @@ network:
  - [-1, 1, tf.keras.layers.MaxPooling2D, [2, 2, "valid"]]
  - [-1, 8, CSPResNet2C, [64]]
  - [-1, 1, Conv, [128, 3, 2]]
- - [-1, 16, CSPResNet2C, [128]]
+ - [-1, 14, CSPResNet2C, [128]]
  - [-1, 1, Conv, [256, 3, 2]]
  - [-1, 16, CSPResNet2C, [256]]
  - [-1, 1, Conv, [512, 3, 2]]
- - [-1, 8, CSPResNet2C, [512]]
+ - [-1, 10, CSPResNet2C, [512]]
 
  - [-1, 1, ClassifyR, []]
