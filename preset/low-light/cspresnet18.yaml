@@ -69,9 +69,9 @@
 #hsv_h: 0.15
 #hsv_s: 0.50
 #hsv_v: 0.50
-#hsv_offset_h: 0.0
-#hsv_offset_s: 0.0
-#hsv_offset_v: 0.0
+hsv_offset_h: 0.0
+hsv_offset_s: +0.25
+hsv_offset_v: -0.80
 #noise:
 #  mean: 0
 #  std: [0, 20]
@@ -130,8 +130,8 @@
 #  - name of checkpoint
 # -----------------------------------------------------------
 
-#checkpoint_path: runs
-#checkpoint_name: train
+checkpoint_path: runs-low-light
+checkpoint_name: cspresnet18
 
 # -----------------------------------------------------------
 # Train parameters
@@ -203,4 +203,4 @@
 #decay_lr: 0.01
 #decay_start: 15
 #save_period: 0
-#model: resnet/54.yaml
+model: cspresnet/18.yaml

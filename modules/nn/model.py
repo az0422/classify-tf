@@ -264,7 +264,3 @@ class ClassifyModel(Model):
 
     def getConfig(self):
         return self.cfg
-    
-    def predict(self, x, **kwargs):
-        out = super().predict(x, **kwargs)
-        return out

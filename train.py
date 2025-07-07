@@ -36,11 +36,12 @@ def model_compile(cfg, model):
 
     assert cfg["optimizer"].lower() in optimizer_dict.keys(), "Invalid optimizer"
     assert cfg["loss"].lower() in loss_dict.keys(), "Invalid loss function"
-    assert cfg["batch_size"] % cfg["subdivisions"] == 0, "Invalid subdivisions"
+    assert cfg["subdivisions"] is None or cfg["batch_size"] % cfg["subdivisions"] == 0, "Invalid subdivisions"
 
     optimizer = optimizer_dict[cfg["optimizer"].lower()]
     loss = loss_dict[cfg["loss"].lower()]
     learning_rate = cfg["learning_rate"]
+    gradient_accumulation = cfg["subdivisions"] if cfg["subdivisions"] not in (None, -1, 0, 1) else None
 
     if cfg["loss_args"] is not None:
         loss = loss(*cfg["loss_args"])
@@ -48,7 +49,10 @@ def model_compile(cfg, model):
         loss = loss()
 
     model.compile(
-        optimizer=optimizer(learning_rate=learning_rate, gradient_accumulation_steps=(cfg["subdivisions"] if cfg["subdivisions"] not in (None, 1, 0, -1) else None)),
+        optimizer=optimizer(
+            learning_rate=learning_rate,
+            gradient_accumulation_steps=gradient_accumulation
+        ),
         loss=loss,
         metrics=['accuracy']
     )

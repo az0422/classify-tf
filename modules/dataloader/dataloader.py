@@ -1,16 +1,11 @@
 import time
 import random
-import numpy as np
 import math
-import cv2
-import multiprocessing
-import gc
-import queue
 
 import tensorflow as tf
 from tensorflow.keras.utils import Sequence
 
-from .utils import load_filelist, resize_contain, resize_stretch
+from .utils import load_filelist
 from .augment import DataAugment
 
 class DataLoader(Sequence):

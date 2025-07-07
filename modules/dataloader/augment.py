@@ -33,10 +33,10 @@ class DataAugment(multiprocessing.Process):
     
     def _flip(self, image):
         if np.random.rand() < self.cfg["flip_vertical"]:
-            image = image[::-1]
+            image = np.flip(image, axis=0)
         
         if np.random.rand() < self.cfg["flip_horizontal"]:
-            image = image[:, ::-1]
+            image = np.flip(image, axis=1)
         
         return image
     
@@ -112,11 +112,11 @@ class DataAugment(multiprocessing.Process):
         return image
     
     def _dequality(self, image):
-        dequality = 1 - np.random.rand() * self.cfg["dequality"]
+        quality = 1 - np.random.rand() * self.cfg["dequality"]
 
-        if dequality > 0:
+        if quality < 0.9:
             fmt, qlt = random.choices(LOSS_FORMAT)[0]
-            _, image = cv2.imencode(fmt, image, [qlt, round(dequality * 100)])
+            _, image = cv2.imencode(fmt, image, [qlt, round(quality * 100)])
             image = cv2.imdecode(image, cv2.IMREAD_COLOR)
 
         return image
@@ -152,8 +152,8 @@ class DataAugment(multiprocessing.Process):
                 label_np = np.zeros([self.classes], dtype=np.uint8)
                 label_np[label] = 1
                 
-                images.append(image[None, ...])
-                labels.append(label_np[None, ...])
+                images.append(np.expand_dims(image, axis=0))
+                labels.append(np.expand_dims(label_np, axis=0))
             
             images = np.concatenate(images, axis=0)
             labels = np.concatenate(labels, axis=0)
