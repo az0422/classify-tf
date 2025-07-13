@@ -197,10 +197,10 @@ checkpoint_name: cspresnet18
 #image_size: 224
 #epochs: 300
 #patience: 50
-#warmup_epochs: 10
+warmup_epochs: -1
 #warmup_lr: 0.001
 #scheduler_type: cosine
 #decay_lr: 0.01
-#decay_start: 15
+decay_start: -1
 #save_period: 0
 model: cspresnet/18.yaml

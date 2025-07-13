@@ -55,3 +55,9 @@ def calc_flops(model):
                 total_flops += np.prod([2, *shape_a, shape_b[-1]], dtype=np.int64)
     
     return total_flops
+
+def getitem(dataloader):
+    return dataloader.__getitem__()
+
+def progress_bar(it, its):
+    return " %d/%d [%-16s]" % (it, its, "=" * round(((it + 1) / its) * 16))

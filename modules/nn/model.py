@@ -51,7 +51,7 @@ from .modules import (
 def quantize_channels(channels):
     return math.ceil(channels / 8) * 8
 
-def parse_model(cfg, classes, image_size=None, aux=True, default_act=None):
+def parse_model(cfg, classes, image_size=None, default_act=None):
     assert os.path.isfile(cfg) or os.path.isfile(os.path.join("cfg/models", cfg)), "Configration file of model was not found."
 
     if not os.path.isfile(cfg):
@@ -227,7 +227,6 @@ def parse_model(cfg, classes, image_size=None, aux=True, default_act=None):
             channels.append(args[1])
         
         elif layer is CombineOutput:
-            args.append(aux)
             ch = channels[index_[0]]
             channels.append(ch)
 
@@ -254,8 +253,8 @@ def parse_model(cfg, classes, image_size=None, aux=True, default_act=None):
     return layers_list, layer_info, cfg_str
 
 class ClassifyModel(Model):
-    def __init__(self, cfg, classes, image_size=None, aux=True, name="classify", **kwargs):
-        self.layers_list, self.layer_info, self.cfg = parse_model(cfg, classes, image_size, aux)
+    def __init__(self, cfg, classes, image_size=None, name="classify", **kwargs):
+        self.layers_list, self.layer_info, self.cfg = parse_model(cfg, classes, image_size)
 
         super().__init__(self.layers_list[0], self.layers_list[-1], name=name, **kwargs)
 

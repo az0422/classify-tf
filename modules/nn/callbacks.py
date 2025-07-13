@@ -1,9 +1,22 @@
 import os
-import gc
 import math
 
 import tensorflow as tf
-from tensorflow.keras.callbacks import Callback
+
+class Callback():
+    def __init__(self):
+        self.model = None
+        self.trainer = None
+    
+    def __call__(self, epoch, logs=None):
+        self.call(epoch, logs)
+    
+    def set_model(self, model, trainer):
+        self.model = model
+        self.trainer = trainer
+
+    def call(self, epoch, logs=None):
+        raise NotImplementedError
 
 class SaveCheckpoint(Callback):
     def __init__(self, path, save_period):
@@ -21,7 +34,7 @@ class SaveCheckpoint(Callback):
         if not os.path.isdir(weights_path):
             os.makedirs(weights_path)
 
-    def on_epoch_end(self, epoch, logs=None):
+    def call(self, epoch, logs=None):
         self.model.save(self.weights_last)
 
         loss = logs["val_loss"]
@@ -58,7 +71,7 @@ class Scheduler(Callback):
         self.warmup_step = (learning_rate - learning_rate * warmup_lr) / warmup_epochs
         self.decay_step = 0.0
     
-    def on_epoch_begin(self, epoch, logs=None):
+    def call(self, epoch, logs=None):
         lr = self.model.optimizer.learning_rate.numpy()
 
         if epoch < self.warmup_epochs:
@@ -76,9 +89,17 @@ class Scheduler(Callback):
         
         self.model.optimizer.learning_rate.assign(lr)
 
-class GarbageCollect(Callback):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+class EarlyStopping(Callback):
+    def __init__(self, patience=50):
+        super().__init__()
+        self.patience = patience
+        self.best_loss = 1e+100
+        self.best_epoch = 0
     
-    def on_epoch_end(self, *args, **kwargs):
-        gc.collect()
+    def call(self, epoch, logs=None):
+        if self.best_loss > logs["val_loss"]:
+            self.best_loss = logs["val_loss"]
+            self.best_epoch = epoch
+        
+        if epoch - self.best_epoch >= self.patience:
+            self.trainer.train_stop = True

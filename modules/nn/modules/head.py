@@ -51,14 +51,9 @@ class ClassifyS(Layer):
         return self.m(x, training=training)
 
 class CombineOutput(Layer):
-    def __init__(self, aux=True):
-        super().__init__()
-        self.aux = aux
-
-    def call(self, x):
+    def call(self, x, training=None):
         x = [tf.expand_dims(xx, axis=1) for xx in x]
         x = tf.concat(x, axis=1)
 
-        if self.aux:
-            return x
+        if training: return x
         return x[:, -1]

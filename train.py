@@ -14,7 +14,8 @@ from tensorflow.keras.callbacks import EarlyStopping
 
 from modules.utils import parse_cfg, apply_local_cfg
 from modules.nn.model import ClassifyModel
-from modules.nn.callbacks import SaveCheckpoint, Scheduler, GarbageCollect
+from modules.nn.callbacks import SaveCheckpoint, Scheduler, EarlyStopping
+from modules.nn.trainer import Trainer
 from modules.nn.losses import MSE, MAE, RMSE, AuxiliaryCategoricalCrossEntropy
 from modules.dataloader import DataLoader
 
@@ -41,7 +42,6 @@ def model_compile(cfg, model):
     optimizer = optimizer_dict[cfg["optimizer"].lower()]
     loss = loss_dict[cfg["loss"].lower()]
     learning_rate = cfg["learning_rate"]
-    gradient_accumulation = cfg["subdivisions"] if cfg["subdivisions"] not in (None, -1, 0, 1) else None
 
     if cfg["loss_args"] is not None:
         loss = loss(*cfg["loss_args"])
@@ -51,7 +51,6 @@ def model_compile(cfg, model):
     model.compile(
         optimizer=optimizer(
             learning_rate=learning_rate,
-            gradient_accumulation_steps=gradient_accumulation
         ),
         loss=loss,
         metrics=['accuracy']
@@ -142,14 +141,9 @@ def create_dataloaders(cfg, model_output_shape):
     return dataloader, dataloaderval
 
 def train(model, dataloader, dataloaderval, cfg, epoch):
-    model.fit(
-        dataloader,
-        batch_size=cfg["batch_size"],
-        epochs=cfg["epochs"],
-        initial_epoch=epoch,
-        validation_data=dataloaderval,
-        callbacks=[
-            SaveCheckpoint(cfg["path"], cfg["save_period"]),
+    trainer = Trainer(model)
+    trainer.set_callbacks(
+        epoch_begin=[
             Scheduler(
                 learning_rate=cfg["learning_rate"],
                 warmup_lr=cfg["warmup_lr"],
@@ -158,13 +152,23 @@ def train(model, dataloader, dataloaderval, cfg, epoch):
                 decay_lr=cfg["decay_lr"],
                 decay_start=cfg["decay_start"],
                 decay_epochs=cfg["epochs"] - cfg["decay_start"],
-            ),
-            GarbageCollect(),
-            EarlyStopping(
-                monitor='val_loss',
-                patience=cfg["patience"],
-            ),
+            )
         ],
+        epoch_end=[
+            SaveCheckpoint(
+                cfg["path"],
+                cfg["save_period"]
+            ),
+            EarlyStopping(
+                cfg["patience"]
+            )
+        ]
+    )
+    trainer.train(
+        dataloader,
+        dataloaderval,
+        cfg["epochs"],
+        cfg["subdivisions"]
     )
 
 def main(cfg, checkpoint, epoch, resume):

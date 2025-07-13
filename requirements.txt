@@ -2,3 +2,4 @@ tensorflow>=2.16.0
 opencv-python
 pyyaml
 matplotlib
+tqdm

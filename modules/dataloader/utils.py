@@ -1,7 +1,6 @@
 import os
 from typing import Union
 import queue
-import random
 
 import cv2
 import numpy as np
