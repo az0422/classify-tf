@@ -24,7 +24,7 @@ def calc_flops(model):
             output = [1]
 
         if op.type in ("Conv1D", "Conv2D", "Conv3D"):
-            input_shape = op.inputs[0].get_shape()[1:]
+            input_shape = op.inputs[1].get_shape()
             total_flops += np.prod([2, *input_shape, *output[:-1]], dtype=np.int64)
         
         elif op.type in ("AddV2", "Mul", "Sub", "Div", "Mean", "Maximum", "Square", "Sum", "Neg", "Sqrt", "BiasAdd"):
