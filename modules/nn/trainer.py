@@ -83,13 +83,11 @@ class Trainer():
     def _train(self, dataloader, gradient_accumulate_steps=1):
         gradients = self._new_gradients()
         losses = []
-        ms_its = 0
         dataloader_bar = tqdm(dataloader, mininterval=0.5, bar_format="{l_bar}{bar:20}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}] {rate_fmt}{postfix}")
 
         for it, (x, y) in enumerate(dataloader_bar):
             if len(dataloader) <= it: break
             
-            start = time.time()
             if self.aux:
                 y = tf.expand_dims(y, axis=1)
                 y = tf.tile(y, [1, self.aux_length, 1])
@@ -101,36 +99,22 @@ class Trainer():
             if (it + 1) % gradient_accumulate_steps == 0:
                 self._apply_gradient(gradients, gradient_accumulate_steps)
                 gradients = self._new_gradients()
-
-            if (time.time() - start) < 1:
-                if ms_its % 10 == 0:
-                    dataloader_bar.set_postfix_str(("loss: %.4f, " % (np.mean(losses))) + self._print_metrics(), refresh=False)
-                ms_its += 1
-            else:
-                dataloader_bar.set_postfix_str(("loss: %.4f, " % (np.mean(losses))) + self._print_metrics(), refresh=False)
-                ms_its = 0
+            
+            dataloader_bar.set_postfix_str(("loss: %.4f, " % (np.mean(losses))) + self._print_metrics(), refresh=False)
         
         return np.mean(losses)
     
     def _validate(self, dataloader):
         losses = []
-        ms_its = 0
         dataloader_bar = tqdm(dataloader, mininterval=0.5, bar_format="{l_bar}{bar:20}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}] {rate_fmt}{postfix}")
 
         for it, (x, y) in enumerate(dataloader_bar):
             if len(dataloader) <= it: break
             
-            start = time.time()
             loss = self._validate_step(x, y)
             losses.append(loss)
 
-            if (time.time() - start) < 1:
-                if ms_its % 10 == 0:
-                    dataloader_bar.set_postfix_str(("loss: %.4f, " % (np.mean(losses))) + self._print_metrics(), refresh=False)
-                ms_its += 1
-            else:
-                dataloader_bar.set_postfix_str(("loss: %.4f, " % (np.mean(losses))) + self._print_metrics(), refresh=False)
-                ms_its = 0
+            dataloader_bar.set_postfix_str(("loss: %.4f, " % (np.mean(losses))) + self._print_metrics(), refresh=False)
         
         return np.mean(losses)
     

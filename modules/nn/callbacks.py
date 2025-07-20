@@ -24,9 +24,9 @@ class SaveCheckpoint(Callback):
         self.save_period = save_period
 
         weights_path = os.path.join(path, "weights")
-        self.weights_epoch = os.path.join(weights_path, "epoch-%016d.keras")
-        self.weights_best = os.path.join(weights_path, "best.keras")
-        self.weights_last = os.path.join(weights_path, "last.keras")
+        self.weights_epoch = os.path.join(weights_path, "epoch-%016d.weights.h5")
+        self.weights_best = os.path.join(weights_path, "best.weights.h5")
+        self.weights_last = os.path.join(weights_path, "last.weights.h5")
         self.log = os.path.join(path, "train.csv")
 
         self.best_loss = 1e+100
@@ -35,15 +35,15 @@ class SaveCheckpoint(Callback):
             os.makedirs(weights_path)
 
     def call(self, epoch, logs=None):
-        self.model.save(self.weights_last)
+        self.model.save_weights(self.weights_last)
 
         loss = logs["val_loss"]
         if self.best_loss >= loss:
             self.best_loss = loss
-            self.model.save(self.weights_best)
+            self.model.save_weights(self.weights_best)
 
         if self.save_period > 0 and epoch % self.save_period == 0:
-            self.model.save(self.weights_epoch % (epoch + 1))
+            self.model.save_weights(self.weights_epoch % (epoch + 1))
         
         lr = self.model.optimizer.learning_rate.numpy()
 

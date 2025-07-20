@@ -10,7 +10,6 @@ if "TF_CPP_MIN_LOG_LEVEL" not in os.environ.keys():
 import tensorflow as tf
 from tensorflow.keras.optimizers import Adam, Adadelta, Adagrad, AdamW, Adamax, Ftrl, Lion, Nadam, RMSprop, SGD
 from tensorflow.keras.losses import CategoricalCrossentropy
-from tensorflow.keras.callbacks import EarlyStopping
 
 from modules.utils import parse_cfg, apply_local_cfg
 from modules.nn.model import ClassifyModel
