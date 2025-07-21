@@ -102,4 +102,4 @@ class EarlyStopping(Callback):
             self.best_epoch = epoch
         
         if epoch - self.best_epoch >= self.patience:
-            self.trainer.stop_train = True
+            self.trainer.stop()

@@ -20,6 +20,9 @@ class Trainer():
 
         self.stop_train = False
     
+    def stop(self):
+        self.stop_train = True
+    
     def _update_state(self, y_true, y_pred):
         for m in self.model.metrics:
             m.update_state(y_true, y_pred)
