@@ -1,11 +1,9 @@
-from tqdm import tqdm
 import numpy as np
 import time
 
-import tensorflow as tf
+from tqdm import tqdm
 
-def mean(a):
-    return sum(a) / len(a)
+import tensorflow as tf
 
 class Trainer():
     def __init__(self, model):
@@ -51,28 +49,21 @@ class Trainer():
         return log_dict
     
     @tf.function
-    def _new_gradients(self):
-        return [tf.zeros_like(var) for var in self.model.trainable_variables]
-    
-    @tf.function
-    def _accumulate_gradient(self, a, b):
-        return [g1 + g2 for (g1, g2) in zip(a, b)]
-    
-    @tf.function
-    def _apply_gradient(self, gradients, gradient_accumulate_steps):
-        grad = [g / gradient_accumulate_steps for g in gradients]
+    def _apply_gradient(self, gradients, gradient_accumulation_steps):
+        grad = [g / gradient_accumulation_steps for g in gradients]
         self.model.optimizer.apply_gradients(zip(grad, self.model.trainable_variables))
     
     @tf.function(jit_compile=True)
-    def _train_step(self, x, y):
+    def _train_step(self, x, y, prev_gradients):
         with tf.GradientTape() as tape:
             pred = self.model(x, training=True)
             loss = self.model.loss(y, pred)
         
         self._update_state(y, pred)
         
-        gradient = tape.gradient(loss, self.model.trainable_variables)
-        return gradient, float(loss)
+        gradients = tape.gradient(loss, self.model.trainable_variables)
+        gradients = [g1 + g2 for (g1, g2) in zip(gradients, prev_gradients)]
+        return gradients, float(loss)
     
     @tf.function(jit_compile=True)
     def _validate_step(self, x, y):
@@ -83,10 +74,11 @@ class Trainer():
 
         return float(loss)
     
-    def _train(self, dataloader, gradient_accumulate_steps=1):
-        gradients = self._new_gradients()
+    def _train(self, dataloader, gradient_accumulation_steps=1):
+        gradients = [tf.zeros_like(var) for var in self.model.trainable_variables]
         losses = []
         dataloader_bar = tqdm(dataloader, mininterval=0.5, bar_format="{l_bar}{bar:20}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}] {rate_fmt}{postfix}")
+        start = time.time()
 
         for it, (x, y) in enumerate(dataloader_bar):
             if len(dataloader) <= it: break
@@ -95,29 +87,33 @@ class Trainer():
                 y = tf.expand_dims(y, axis=1)
                 y = tf.tile(y, [1, self.aux_length, 1])
 
-            grad, loss = self._train_step(x, y)
-            gradients = self._accumulate_gradient(gradients, grad)
+            gradients, loss = self._train_step(x, y, gradients)
             losses.append(loss)
 
-            if (it + 1) % gradient_accumulate_steps == 0:
-                self._apply_gradient(gradients, gradient_accumulate_steps)
-                gradients = self._new_gradients()
+            if (it + 1) % gradient_accumulation_steps == 0:
+                self._apply_gradient(gradients, gradient_accumulation_steps)
+                gradients = [tf.zeros_like(var) for var in self.model.trainable_variables]
             
-            dataloader_bar.set_postfix_str(("loss: %.4f, " % (np.mean(losses))) + self._print_metrics(), refresh=False)
+            if time.time() - start > 0.5:
+                dataloader_bar.set_postfix_str(("loss: %.4f, " % (np.mean(losses))) + self._print_metrics(), refresh=False)
+                start = time.time()
         
         return np.mean(losses)
     
     def _validate(self, dataloader):
         losses = []
         dataloader_bar = tqdm(dataloader, mininterval=0.5, bar_format="{l_bar}{bar:20}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}] {rate_fmt}{postfix}")
+        start = time.time()
 
         for it, (x, y) in enumerate(dataloader_bar):
             if len(dataloader) <= it: break
             
             loss = self._validate_step(x, y)
             losses.append(loss)
-
-            dataloader_bar.set_postfix_str(("loss: %.4f, " % (np.mean(losses))) + self._print_metrics(), refresh=False)
+            
+            if time.time() - start > 0.5:
+                dataloader_bar.set_postfix_str(("val_loss: %.4f, " % (np.mean(losses))) + self._print_metrics("val_"), refresh=False)
+                start = time.time()
         
         return np.mean(losses)
     
@@ -127,16 +123,16 @@ class Trainer():
         self.epoch_begin = epoch_begin
         self.epoch_end = epoch_end
 
-        for c in train_begin + train_end + epoch_begin + epoch_end:
-            c.set_model(self.model, self)
+        for callback in train_begin + train_end + epoch_begin + epoch_end:
+            callback.set_model(self.model, self)
 
     def train(self, dataloader, dataloaderval, epochs=100, gradient_accumulation_steps=1):
-        for c in self.train_begin:
-            c(0, None)
+        for callback in self.train_begin:
+            callback(0, None)
         
         for epoch in range(epochs):
-            for c in self.epoch_begin:
-                c(epoch, None)
+            for callback in self.epoch_begin:
+                callback(epoch, None)
             
             print("Epoch %d/%d" % (epoch + 1, epochs))
 
@@ -147,8 +143,9 @@ class Trainer():
                 m.reset_state()
             
             val_loss = self._validate(dataloaderval)
-            logs = {"loss": train_loss, "val_loss": val_loss}
             val_log = self._metrics_to_dict("val_")
+
+            logs = {"loss": train_loss, "val_loss": val_loss}
 
             for key in train_log.keys():
                 logs[key] = train_log[key]
@@ -156,16 +153,14 @@ class Trainer():
             for key in val_log.keys():
                 logs[key] = val_log[key]
             
-            for c in self.epoch_end:
-                c(epoch, logs)
+            for callback in self.epoch_end:
+                callback(epoch, logs)
 
             for m in self.model.metrics:
                 m.reset_state()
 
-            print("")
-
             if self.stop_train:
                 break
         
-        for c in self.train_end:
-            c(epoch, logs)
+        for callback in self.train_end:
+            callback(epoch, logs)

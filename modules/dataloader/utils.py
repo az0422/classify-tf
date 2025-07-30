@@ -63,7 +63,7 @@ def load_filelist(image: str, loaders: int):
         
         while not test_queue.empty():
             image, label, flag = test_queue.get()
-            if flag:
+            if flag and categories[label] in image:
                 ok += 1
                 images.append(image)
                 labels.append(label)
@@ -97,11 +97,23 @@ class TestImage(threading.Thread):
         self.queue.put([self.image, self.label, test is not None])
 
 class LoadImage(threading.Thread):
-    def __init__(self, image: Union[str, bytes, bytearray, np.ndarray], label: int, queue: queue.Queue, image_size: int, resize_method: str):
+    def __init__(
+            self,
+            image: Union[str, bytes, bytearray, np.ndarray],
+            label: int, 
+            images_list: Union[np.ndarray, list],
+            labels_list: Union[np.ndarray, list],
+            index: int,
+            image_size: int,
+            resize_method: str,
+        ):
         super().__init__()
+
         self.image = image
         self.label = label
-        self.queue = queue
+        self.images_list = images_list
+        self.labels_list = labels_list
+        self.index = index
         self.image_size = image_size
         self.resize_method = resize_method
     
@@ -121,4 +133,5 @@ class LoadImage(threading.Thread):
         elif type(self.image) is np.ndarray:
             image = self._resize(self.image)
         
-        self.queue.put([image, self.label])
+        self.images_list[self.index] = image
+        self.labels_list[self.index][self.label] = 1

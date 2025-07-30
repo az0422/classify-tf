@@ -2,6 +2,10 @@ import cv2
 import numpy as np
 import random
 import multiprocessing
+import copy
+import tensorflow as tf
+
+from multiprocessing import shared_memory
 
 from .utils import resize_contain, resize_stretch
 
@@ -11,19 +15,33 @@ LOSS_FORMAT = [
     #[".avif", cv2.IMWRITE_AVIF_QUALITY],
 ]
 
-class DataAugment(multiprocessing.Process):
-    def __init__(self, seed, images, classes, cfg, augment=True):
-        super().__init__()
-        np.random.seed((~seed) & 0xFFFFFFFF)
-        random.seed(seed if np.random.rand() > 0.5 else seed * -1)
-
-        self.images = images
-        self.classes = classes
+class Augmentor():
+    def __init__(self, cfg, augment_flag):
         self.cfg = cfg
-        self.augment = augment
+        self.augment_flag = augment_flag
+        self.buffer = np.zeros(
+            [
+                self.cfg["image_size"],
+                self.cfg["image_size"],
+                3
+            ],
+            dtype=np.uint8,
+        )
+    
+    def __call__(self, image):
+        np.copyto(self.buffer, 0)
+        np.copyto(self.buffer, self._resize(image))
 
-        self.queue = multiprocessing.Queue(self.cfg["queue_size"])
+        if self.augment_flag:
+            np.copyto(self.buffer, self._crop(self.buffer))
+            np.copyto(self.buffer, self._flip(self.buffer))
+            np.copyto(self.buffer, self._translate(self.buffer))
+            np.copyto(self.buffer, self._hsv(self.buffer))
+            np.copyto(self.buffer, self._noise(self.buffer))
+            np.copyto(self.buffer, self._dequality(self.buffer))
 
+        return self.buffer.copy()
+    
     def _resize(self, image):
         if self.cfg["resize_method"] in ("default", "contain"):
             return resize_contain(image, self.cfg["image_size"])
@@ -120,45 +138,130 @@ class DataAugment(multiprocessing.Process):
             image = cv2.imdecode(image, cv2.IMREAD_COLOR)
 
         return image
+
+class DataAugment(multiprocessing.Process):
+    def __init__(self, seed, images, classes, cfg, augment=True, categories=None):
+        super().__init__()
+        np.random.seed((~seed) & 0xFFFFFFFF)
+        random.seed(seed if np.random.rand() > 0.5 else seed * -1)
+
+        self.images = images
+        self.classes = classes
+        self.cfg = cfg
+        self.augment = augment
+        self.categories = categories
+
+        image_data_length = cfg["batch_size"] * (self.cfg["image_size"] ** 2) * 3
+        label_data_length = cfg["batch_size"] * cfg["classes"]
+
+        self.writer_index_queue = multiprocessing.Queue(self.cfg["queue_size"])
+        self.reader_index_queue = multiprocessing.Queue(self.cfg["queue_size"])
+
+        for i in range(self.cfg["queue_size"]):
+            self.writer_index_queue.put(i)
+        
+        self.images_buff = shared_memory.SharedMemory(create=True, size=image_data_length * self.cfg["queue_size"])
+        self.labels_buff = shared_memory.SharedMemory(create=True, size=label_data_length * self.cfg["queue_size"])
+
+        self.images_buff_np = np.ndarray(
+            [
+                self.cfg["queue_size"],
+                self.cfg["batch_size"],
+                self.cfg["image_size"],
+                self.cfg["image_size"],
+                3
+            ],
+            dtype=np.uint8,
+            buffer=self.images_buff.buf
+        )
+
+        self.labels_buff_np = np.ndarray(
+            [
+                self.cfg["queue_size"],
+                self.cfg["batch_size"],
+                self.cfg["classes"],
+            ],
+            dtype=np.uint8,
+            buffer=self.labels_buff.buf
+        )
+
+    def terminate(self):
+        self.images_buff.unlink()
+        self.labels_buff.unlink()
+
+        super().terminate()
     
     def run(self):
+        buff_images_shm = np.ndarray(
+            [
+                self.cfg["queue_size"],
+                self.cfg["batch_size"],
+                self.cfg["image_size"],
+                self.cfg["image_size"],
+                3
+            ],
+            dtype=np.uint8,
+            buffer=self.images_buff.buf
+        )
+        buff_labels_shm = np.ndarray(
+            [
+                self.cfg["queue_size"],
+                self.cfg["batch_size"],
+                self.cfg["classes"],
+            ],
+            dtype=np.uint8,
+            buffer=self.labels_buff.buf
+        )
+
+        buff_images = np.zeros(
+            [
+                self.cfg["batch_size"],
+                self.cfg["image_size"],
+                self.cfg["image_size"],
+                3,
+            ],
+            dtype=np.uint8
+        )
+        buff_labels = np.zeros(
+            [
+                self.cfg["batch_size"],
+                self.cfg["classes"]
+            ],
+            dtype=np.uint8
+        )
+
+        images = copy.deepcopy(self.images)
+        cfg = copy.deepcopy(self.cfg)
+        augmentor = Augmentor(cfg, self.augment)
+        
         while True:
-            images = []
-            labels = []
-            images_list = [random.choice(self.images) for _ in range(self.cfg["batch_size"])]
+            taked_images_list = random.sample(images, self.cfg["batch_size"])
+            np.copyto(buff_labels, 0)
+            np.copyto(buff_images, 0)
 
-            for image, label in images_list:
-                if image.endswith(".npy"):
-                    image = np.load(image)
-                else:
-                    image = cv2.imread(image, cv2.IMREAD_COLOR)
+            for sub_index, (image, label) in enumerate(taked_images_list):
+                image = cv2.imread(image, cv2.IMREAD_COLOR)
+                image = augmentor(image)
                 
-                image = self._resize(image)
+                if cfg["color_space"].lower() == "rgb":
+                    image, cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
-                if self.augment:
-                    image = self._crop(image)
-                    image = self._flip(image)
-                    image = self._translate(image)
-                    image = self._hsv(image)
-                    image = self._noise(image)
-                    image = self._dequality(image)
-
-                if self.cfg["color_space"].lower() == "rgb":
-                    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
-                elif self.cfg["color_space"].lower() == "hsv":
+                elif cfg["color_space"].lower() == "hsv":
                     image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
                 
-                label_np = np.zeros([self.classes], dtype=np.uint8)
-                label_np[label] = 1
-                
-                images.append(np.expand_dims(image, axis=0))
-                labels.append(np.expand_dims(label_np, axis=0))
-            
-            images = np.concatenate(images, axis=0)
-            labels = np.concatenate(labels, axis=0)
-            
-            self.queue.put([images, labels])
+                image = image.astype(np.uint8)
+                np.copyto(buff_images[sub_index], image)
+                buff_labels[sub_index][label] = 1
+
+            data_index = self.writer_index_queue.get()
+            np.copyto(buff_images_shm[data_index], buff_images)
+            np.copyto(buff_labels_shm[data_index], buff_labels)
+            self.reader_index_queue.put(data_index)
         
     def getData(self):
-        return self.queue.get()
+        index = self.reader_index_queue.get()
+        images = tf.convert_to_tensor(self.images_buff_np[index], tf.float32) / 255.
+        labels = tf.convert_to_tensor(self.labels_buff_np[index], tf.float32)
+        self.writer_index_queue.put(index)
+
+        return images, labels

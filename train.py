@@ -114,13 +114,9 @@ def dump_image(images, labels, path, name):
         image = np.round(image).astype(np.uint8)
         cv2.imwrite(filename % (label, i), image)
 
-def create_dataloaders(cfg, model_output_shape):
-    aux = 1
-    if len(model_output_shape) == 3:
-        aux = model_output_shape[1]
-
-    dataloader = DataLoader(cfg["train_image"], cfg, aux, True)
-    dataloaderval = DataLoader(cfg["val_image"], cfg, aux, False)
+def create_dataloaders(cfg):
+    dataloader = DataLoader(cfg["train_image"], cfg, True)
+    dataloaderval = DataLoader(cfg["val_image"], cfg, False)
 
     dataloader.startAugment()
     dataloaderval.startAugment()
@@ -132,10 +128,23 @@ def create_dataloaders(cfg, model_output_shape):
     with open(classes_txt, "w") as f:
         f.write("\n".join(dataloader.classes_name))
     
-    image, label = dataloader.__getitem__(0)
-    dump_image(image.numpy(), label.numpy(), checkpoint_path, "train")
-    image, label = dataloaderval.__getitem__(0)
-    dump_image(image.numpy(), label.numpy(), checkpoint_path, "val")
+    images = []
+    labels = []
+    for _ in range(cfg["subdivisions"]):
+        image, label = dataloader.__getitem__()
+        images.append(image.numpy())
+        labels.append(label.numpy())
+    
+    dump_image(np.concatenate(images, axis=0), np.concatenate(labels, axis=0), checkpoint_path, "train")
+    
+    images = []
+    labels = []
+    for _ in range(cfg["subdivisions"]):
+        image, label = dataloaderval.__getitem__()
+        images.append(image.numpy())
+        labels.append(label.numpy())
+
+    dump_image(np.concatenate(images, axis=0), np.concatenate(labels, axis=0), checkpoint_path, "val")
 
     return dataloader, dataloaderval
 
@@ -169,6 +178,10 @@ def train(model, dataloader, dataloaderval, cfg, epoch):
         cfg["epochs"],
         cfg["subdivisions"]
     )
+
+def kill_augment(augments):
+    for augment in augments:
+        augment.terminate()
 
 def main(cfg, checkpoint, epoch, resume):
     gpus = tf.config.list_physical_devices('GPU')
@@ -214,14 +227,21 @@ def main(cfg, checkpoint, epoch, resume):
         print("Load weights")
         model, last_epoch = load_weights(cfg, model, checkpoint, epoch)
 
-    print("Create data loaders")
-    dataloader, dataloaderval = create_dataloaders(cfg, model.outputs[0].shape)
+    try:
+        print("Create data loaders")
+        dataloader, dataloaderval = create_dataloaders(cfg)
 
-    print("Train start")
-    train(model, dataloader, dataloaderval, cfg, last_epoch)
+        print("Train start")
+        train(model, dataloader, dataloaderval, cfg, last_epoch)
 
-    dataloader.stopAugment()
-    dataloaderval.stopAugment()
+        dataloader.stopAugment()
+        dataloaderval.stopAugment()
+        
+    except KeyboardInterrupt:
+        for augment in dataloader.augments:
+            augment.terminate()
+        for augment in dataloaderval.augments:
+            augment.terminate()
 
 if __name__ == "__main__":
     cfg = parse_cfg("cfg/settings.yaml")
