@@ -187,20 +187,11 @@ def main(cfg, checkpoint, epoch, resume):
     gpus = tf.config.list_physical_devices('GPU')
     if gpus:
         try:
-            for gpu in gpus:
-                tf.config.experimental.set_memory_growth(gpu, True)
+            tf.config.set_visible_devices(gpus[0], 'GPU')
+            tf.config.experimental.set_memory_growth(gpus[0], True)
         except RuntimeError as e:
             print(e)
-            for gpu in gpus:
-                tf.config.experimental.set_memory_growth(gpu, False)
-    
-    gpus = tf.config.list_logical_devices('GPU')
-    if len(gpus) > 1:
-        gpu_process = tf.distribute.MirroredStrategy([gpu.name for gpu in gpus])
-        print("Detected multi-GPU")
-        print([gpu.name for gpu in gpus])
-    else:
-        gpu_process = tf.distribute.get_strategy()
+            sys.exit()
 
     tf.keras.mixed_precision.set_global_policy(cfg["mixed_precision"])
 
@@ -212,8 +203,7 @@ def main(cfg, checkpoint, epoch, resume):
 
     last_epoch = 0
     print("Create model")
-    with gpu_process.scope():
-        model, classes = create_model(cfg, checkpoint, resume)
+    model, classes = create_model(cfg, checkpoint, resume)
     
     if not resume:
         last_epoch = 0

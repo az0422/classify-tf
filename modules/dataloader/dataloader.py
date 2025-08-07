@@ -52,6 +52,7 @@ class DataLoader():
     def stopAugment(self):
         for augment in self.augments:
             augment.terminate()
+            augment.join()
 
     def __len__(self):
         return self.data_length

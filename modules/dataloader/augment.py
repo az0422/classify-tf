@@ -40,7 +40,7 @@ class Augmentor():
             np.copyto(self.buffer, self._noise(self.buffer))
             np.copyto(self.buffer, self._dequality(self.buffer))
 
-        return self.buffer.copy()
+        return self.buffer
     
     def _resize(self, image):
         if self.cfg["resize_method"] in ("default", "contain"):
@@ -213,7 +213,7 @@ class DataAugment(multiprocessing.Process):
             buffer=self.labels_buff.buf
         )
 
-        buff_images = np.zeros(
+        buff_images_batch = np.zeros(
             [
                 self.cfg["batch_size"],
                 self.cfg["image_size"],
@@ -222,7 +222,7 @@ class DataAugment(multiprocessing.Process):
             ],
             dtype=np.uint8
         )
-        buff_labels = np.zeros(
+        buff_labels_batch = np.zeros(
             [
                 self.cfg["batch_size"],
                 self.cfg["classes"]
@@ -236,26 +236,24 @@ class DataAugment(multiprocessing.Process):
         
         while True:
             taked_images_list = random.sample(images, self.cfg["batch_size"])
-            np.copyto(buff_labels, 0)
-            np.copyto(buff_images, 0)
+            np.copyto(buff_images_batch, 0)
+            np.copyto(buff_labels_batch, 0)
 
             for sub_index, (image, label) in enumerate(taked_images_list):
                 image = cv2.imread(image, cv2.IMREAD_COLOR)
                 image = augmentor(image)
                 
                 if cfg["color_space"].lower() == "rgb":
-                    image, cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
+                    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
                 elif cfg["color_space"].lower() == "hsv":
-                    image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+                    image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV).astype(np.uint8)
                 
-                image = image.astype(np.uint8)
-                np.copyto(buff_images[sub_index], image)
-                buff_labels[sub_index][label] = 1
+                np.copyto(buff_images_batch[sub_index], image)
+                buff_labels_batch[sub_index][label] = 1
 
             data_index = self.writer_index_queue.get()
-            np.copyto(buff_images_shm[data_index], buff_images)
-            np.copyto(buff_labels_shm[data_index], buff_labels)
+            np.copyto(buff_images_shm[data_index], buff_images_batch)
+            np.copyto(buff_labels_shm[data_index], buff_labels_batch)
             self.reader_index_queue.put(data_index)
         
     def getData(self):
