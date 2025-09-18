@@ -1,3 +1,5 @@
+import math
+
 import tensorflow as tf
 from tensorflow.keras.layers import Conv2D, Conv1D, Conv2DTranspose, BatchNormalization, Layer, Dense, Activation
 from tensorflow.keras.models import Sequential
@@ -40,14 +42,19 @@ class FC(BaseLayer):
         self.m = Dense(out_channels)
 
 class Conv(BaseLayer):
-    def __init__(self, in_channels, out_channels, kernel, strides=1, padding="same", dilations=1, act=True, bn=True):
+    def __init__(self, in_channels, out_channels, kernel, strides=1, padding="same", groups=1, dilations=1, act=True, bn=True):
         super().__init__(in_channels, act, bn)
-        self.m = Conv2D(out_channels, kernel, strides, padding=padding, dilation_rate=dilations, use_bias=False)
+        self.m = Conv2D(out_channels, kernel, strides, padding=padding, groups=groups, dilation_rate=dilations, use_bias=(not bn))
+
+class ConvT(BaseLayer):
+    def __init__(self, in_channels, out_channels, kernel, strides=1, padding="same", groups=1, dilations=1, act=True, bn=True):
+        super().__init__(in_channels, act, bn)
+        self.m = Conv1D(out_channels, kernel, strides, padding=padding, groups=groups, dilation_rate=dilations, use_bias=(not bn))
 
 class ConvTranspose(BaseLayer):
-    def __init__(self, in_channels, out_channels, kernel, strides=1, padding="same", act=True, bn=True):
+    def __init__(self, in_channels, out_channels, kernel, strides=1, padding="same", groups=1, act=True, bn=True):
         super().__init__(in_channels, act, bn)
-        self.m = Conv2DTranspose(out_channels, kernel, strides, padding=padding, use_bias=False)
+        self.m = Conv2DTranspose(out_channels, kernel, strides, padding=padding, groups=groups, use_bias=(not bn))
 
 class Shortcut(Layer):
     def __init__(self):
@@ -80,3 +87,14 @@ class Reshape(Layer):
     def call(self, x, training=None):
         batch = tf.shape(x)[0]
         return tf.reshape(x, [batch, *self.reshape_])
+
+class SizewiseFlatten(Layer):
+    def call(self, x):
+        w, h, c = x.shape[-3:]
+        return tf.reshape(x, [-1, h * w, c])
+
+class SizewiseDeflatten(Layer):
+    def call(self, x):
+        f, c = x.shape[-2:]
+
+        return tf.reshape(x, [-1, round(math.sqrt(f)), round(math.sqrt(f)), c])

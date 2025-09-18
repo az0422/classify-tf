@@ -58,25 +58,20 @@ class SaveCheckpoint(Callback):
             ))
 
 class Scheduler(Callback):
-    def __init__(self, learning_rate=1e-3, warmup_lr=1.0, warmup_epochs=0, scheduler_type="linear", decay_lr=1.0, decay_start=0, decay_epochs=0):
+    def __init__(self, learning_rate=1e-3, scheduler_type="linear", decay_lr=1.0, decay_start=0, decay_epochs=0):
         super().__init__()
         self.learning_rate = learning_rate
-        self.warmup_lr = warmup_lr
-        self.warmup_epochs = warmup_epochs
         self.scheduler_type = scheduler_type
         self.decay_lr = decay_lr
         self.decay_start = decay_start - 1
         self.decay_epochs = decay_epochs
 
-        self.warmup_step = (learning_rate - learning_rate * warmup_lr) / warmup_epochs
         self.decay_step = 0.0
     
     def call(self, epoch, logs=None):
         lr = self.model.optimizer.learning_rate.numpy()
 
-        if epoch < self.warmup_epochs:
-            lr = (self.learning_rate - self.learning_rate * self.warmup_lr) / self.warmup_epochs * epoch + self.learning_rate * self.warmup_lr
-        elif self.decay_start > 0 and epoch > self.decay_start:
+        if self.decay_start > 0 and epoch > self.decay_start:
             decay_epoch = epoch - self.decay_start
             if self.scheduler_type == "linear":
                 lr = self.learning_rate - (self.learning_rate - self.learning_rate * self.decay_lr) / self.decay_epochs * decay_epoch

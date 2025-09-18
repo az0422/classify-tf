@@ -5,10 +5,13 @@ from .head import *
 layers_dict = {
     "FC": FC,
     "Conv": Conv,
+    "ConvT": ConvT,
     "ConvTranspose": ConvTranspose,
     "Shortcut": Shortcut,
     "Concat": Concat,
     "Reshape": Reshape,
+    "SizewiseFlatten": SizewiseFlatten,
+    "SizewiseDeflatten": SizewiseDeflatten,
 
     "SEBlock": SEBlock,
     "CBAM": CBAM,
@@ -33,10 +36,9 @@ layers_dict = {
     "Classify": Classify,
     "ClassifyR": ClassifyR,
     "ClassifyS": ClassifyS,
+    "ClassifyFC": ClassifyFC,
     "CombineOutput": CombineOutput,
 
-    "ConvTransformer": ConvTransformer,
-    "ConvPatchPointEmbedding": ConvPatchPointEmbedding,
-    "ConvPositionalEncoding": ConvPositionalEncoding,
-    "ConvMultiHeadAttention": ConvMultiHeadAttention,
+    "PositionalEncodingT": PositionalEncodingT,
+    "MultiHeadAttentionT": MultiHeadAttentionT,
 }

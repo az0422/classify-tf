@@ -11,11 +11,13 @@ from tensorflow.keras.models import Model, Sequential
 
 from .utils import calc_flops
 
+from . import modules
+
 from .modules import (
-    layers_dict,
     BaseLayer,
     FC,
     Conv,
+    ConvT,
     ConvTranspose,
     Shortcut,
     Concat,
@@ -40,12 +42,11 @@ from .modules import (
     Classify,
     ClassifyR,
     ClassifyS,
+    ClassifyFC,
     CombineOutput,
 
-    ConvTransformer,
-    ConvPatchPointEmbedding,
-    ConvPositionalEncoding,
-    ConvMultiHeadAttention,
+    MultiHeadAttentionT,
+    PositionalEncodingT,
 )
 
 def quantize_channels(channels):
@@ -88,7 +89,7 @@ def parse_model(cfg, classes, image_size=None, default_act=None):
         elif layer_name.startswith("tf.keras.layers."):
             layer = eval(layer_name)
         else:
-            layer = layers_dict[layer_name]
+            layer = getattr(modules, layer_name)
         
         depth_ = 0
         args_ = []
@@ -129,6 +130,7 @@ def parse_model(cfg, classes, image_size=None, default_act=None):
         if layer in (
             FC,
             Conv,
+            ConvT,
             ConvTranspose,
 
             SEBlock,
@@ -147,7 +149,7 @@ def parse_model(cfg, classes, image_size=None, default_act=None):
             CSPResNet2L3C,
             CSPSEResNet,
 
-            ConvPositionalEncoding,
+            PositionalEncodingT,
         ):
             args.insert(0, channels[index_])
             args[1] = quantize_channels(args[1] * width_multiple)
@@ -198,29 +200,13 @@ def parse_model(cfg, classes, image_size=None, default_act=None):
             ch = args[0][-1]
             channels.append(ch)
 
-        elif layer in (Classify, ClassifyR, ClassifyS):
+        elif layer in (Classify, ClassifyR, ClassifyS, ClassifyFC):
             ch = channels[index_]
             args.insert(0, ch)
             args.insert(1, classes)
             channels.append(classes)
         
-        elif layer is ConvTransformer:
-            ch = channels[index_]
-            args.insert(0, ch)
-            channels.append(ch)
-        
-        elif layer is ConvPatchPointEmbedding:
-            ch = channels[index_]
-            args.insert(0, ch)
-
-            if len(args) <= 1:
-                out_ch = ch * (16 ** 2)
-            else:
-                out_ch = ch * (args[1] ** 2)
-            
-            channels.append(out_ch)
-        
-        elif layer in (ConvMultiHeadAttention,):
+        elif layer in (MultiHeadAttentionT,):
             ch = [channels[i] for i in index_]
             args.insert(0, ch)
 

@@ -50,6 +50,17 @@ class ClassifyS(Layer):
     def call(self, x, training=None):
         return self.m(x, training=training)
 
+class ClassifyFC(Layer):
+    def __init__(self, in_channels, classes):
+        super().__init__()
+
+        self.m = Sequential([
+            Dense(classes, activation=tf.nn.softmax, dtype=tf.float32)
+        ])
+    
+    def call(self, x, training=None):
+        return self.m(x, training=training)
+
 class CombineOutput(Layer):
     def call(self, x, training=None):
         x = [tf.expand_dims(xx, axis=1) for xx in x]

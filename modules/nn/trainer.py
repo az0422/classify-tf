@@ -15,8 +15,11 @@ class Trainer():
         self.train_end = []
         self.epoch_begin = []
         self.epoch_begin = []
+        self.warmup_epochs = 0
+        self.warmup_lr = 0.0
 
         self.stop_train = False
+        self.learning_rate = self.model.optimizer.learning_rate.numpy()
     
     def stop(self):
         self.stop_train = True
@@ -74,7 +77,7 @@ class Trainer():
 
         return float(loss)
     
-    def _train(self, dataloader, gradient_accumulation_steps=1):
+    def _train(self, dataloader, epoch, gradient_accumulation_steps=1):
         gradients = [tf.zeros_like(var) for var in self.model.trainable_variables]
         losses = []
         dataloader_bar = tqdm(dataloader, mininterval=0.5, bar_format="{l_bar}{bar:20}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}] {rate_fmt}{postfix}")
@@ -82,6 +85,10 @@ class Trainer():
 
         for it, (x, y) in enumerate(dataloader_bar):
             if len(dataloader) <= it: break
+
+            if epoch < self.warmup_epochs:
+                lr = ((self.learning_rate - self.learning_rate * self.warmup_lr) / (self.warmup_epochs * len(dataloader))) * (it + epoch * len(dataloader)) + (self.learning_rate * self.warmup_lr)
+                self.model.optimizer.learning_rate.assign(lr)
             
             if self.aux:
                 y = tf.expand_dims(y, axis=1)
@@ -117,11 +124,13 @@ class Trainer():
         
         return np.mean(losses)
     
-    def set_callbacks(self, train_begin=[], train_end=[], epoch_begin=[], epoch_end=[]):
+    def set_callbacks(self, train_begin=[], train_end=[], epoch_begin=[], epoch_end=[], warmup_epochs=0, warmup_lr=0.0):
         self.train_begin = train_begin
         self.train_end = train_end
         self.epoch_begin = epoch_begin
         self.epoch_end = epoch_end
+        self.warmup_epochs = warmup_epochs
+        self.warmup_lr = warmup_lr
 
         for callback in train_begin + train_end + epoch_begin + epoch_end:
             callback.set_model(self.model, self)
@@ -136,7 +145,7 @@ class Trainer():
             
             print("Epoch %d/%d" % (epoch + 1, epochs))
 
-            train_loss = self._train(dataloader, gradient_accumulation_steps)
+            train_loss = self._train(dataloader, epoch, gradient_accumulation_steps)
             train_log = self._metrics_to_dict()
 
             for m in self.model.metrics:
