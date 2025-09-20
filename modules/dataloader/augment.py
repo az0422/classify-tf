@@ -151,50 +151,42 @@ class DataAugment(multiprocessing.Process):
         self.augment = augment
         self.categories = categories
 
-        image_data_length = cfg["batch_size"] * (self.cfg["image_size"] ** 2) * 3
-        label_data_length = cfg["batch_size"] * cfg["classes"]
-
-        self.writer_index_queue = multiprocessing.Queue(self.cfg["queue_size"])
-        self.reader_index_queue = multiprocessing.Queue(self.cfg["queue_size"])
-
-        for i in range(self.cfg["queue_size"]):
-            self.writer_index_queue.put(i)
-        
-        self.images_buff = shared_memory.SharedMemory(create=True, size=image_data_length * self.cfg["queue_size"])
-        self.labels_buff = shared_memory.SharedMemory(create=True, size=label_data_length * self.cfg["queue_size"])
+        self.reader_index_queue = None
+        self.writer_index_queue = None
+        self.images_buff = None
+        self.labels_buff = None
+        self.images_buff_np = None
+        self.labels_buff_np = None
+    
+    def set_buffer(self, images_buff, labels_buff, reader_index, writer_index):
+        self.images_buff = images_buff
+        self.labels_buff = labels_buff
+        self.reader_index_queue = reader_index
+        self.writer_index_queue = writer_index
 
         self.images_buff_np = np.ndarray(
             [
-                self.cfg["queue_size"],
+                self.cfg["buffer_size"],
                 self.cfg["batch_size"],
                 self.cfg["image_size"],
                 self.cfg["image_size"],
                 3
             ],
-            dtype=np.uint8,
-            buffer=self.images_buff.buf
+            dtype=np.uint8
         )
-
         self.labels_buff_np = np.ndarray(
             [
-                self.cfg["queue_size"],
+                self.cfg["buffer_size"],
                 self.cfg["batch_size"],
                 self.cfg["classes"],
             ],
-            dtype=np.uint8,
-            buffer=self.labels_buff.buf
+            dtype=np.uint8
         )
 
-    def terminate(self):
-        self.images_buff.unlink()
-        self.labels_buff.unlink()
-
-        super().terminate()
-    
     def run(self):
         buff_images_shm = np.ndarray(
             [
-                self.cfg["queue_size"],
+                self.cfg["buffer_size"],
                 self.cfg["batch_size"],
                 self.cfg["image_size"],
                 self.cfg["image_size"],
@@ -205,7 +197,7 @@ class DataAugment(multiprocessing.Process):
         )
         buff_labels_shm = np.ndarray(
             [
-                self.cfg["queue_size"],
+                self.cfg["buffer_size"],
                 self.cfg["batch_size"],
                 self.cfg["classes"],
             ],
@@ -255,11 +247,3 @@ class DataAugment(multiprocessing.Process):
             np.copyto(buff_images_shm[data_index], buff_images_batch)
             np.copyto(buff_labels_shm[data_index], buff_labels_batch)
             self.reader_index_queue.put(data_index)
-        
-    def getData(self):
-        index = self.reader_index_queue.get()
-        images = tf.convert_to_tensor(self.images_buff_np[index], tf.float32) / 255.
-        labels = tf.convert_to_tensor(self.labels_buff_np[index], tf.float32)
-        self.writer_index_queue.put(index)
-
-        return images, labels

@@ -175,7 +175,8 @@ def train(model, dataloader, dataloaderval, cfg, epoch):
         dataloader,
         dataloaderval,
         cfg["epochs"],
-        cfg["subdivisions"]
+        cfg["subdivisions"],
+        cfg["buffer2_size"],
     )
 
 def kill_augment(augments):
@@ -210,7 +211,7 @@ def main(cfg, checkpoint, epoch, resume):
     cfg["classes"] = classes
     yaml.dump(cfg, open(os.path.join(checkpoint_path, "cfg.yaml"), "w"))
 
-    cfg["batch_size"] = cfg["batch_size"] // cfg["subdivisions"]
+    cfg["batch_size"] = cfg["batch_size"] // cfg["subdivisions"] * cfg["buffer2_size"]
 
     if checkpoint is not None:
         print("Load weights")

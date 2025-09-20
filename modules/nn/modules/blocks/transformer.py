@@ -1,6 +1,6 @@
 import tensorflow as tf
 
-from tensorflow.keras.layers import Layer, LayerNormalization
+from tensorflow.keras.layers import Layer, Dropout
 from tensorflow.keras.models import Sequential
 
 from ..layers import ConvT
@@ -54,3 +54,23 @@ class MultiHeadAttentionT(Layer):
         out = tf.reshape(attention, (-1, t, self.out_channels))
 
         return out
+
+class ConvFFNNT(Layer):
+    def __init__(self, in_channels, out_channels, kernels=[3], depth=1, d_out=0.1):
+        super().__init__()
+        assert in_channels == out_channels
+
+        if len(kernels) == 1:
+            kernels = kernels * depth
+        
+        self.m = Sequential([
+            ConvT(out_channels, out_channels, k, 1) for k in kernels
+        ])
+        self.conv1 = ConvT(out_channels, out_channels, 1, 1)
+        self.dropout = Dropout(d_out)
+    
+    def call(self, x, training=None):
+        y = self.m(x, training=training)
+        y = self.conv1(y, training=training)
+
+        return self.dropout(y, training=training) + x

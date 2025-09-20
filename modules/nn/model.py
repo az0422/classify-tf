@@ -47,6 +47,7 @@ from .modules import (
 
     MultiHeadAttentionT,
     PositionalEncodingT,
+    ConvFFNNT,
 )
 
 def quantize_channels(channels):
@@ -150,6 +151,7 @@ def parse_model(cfg, classes, image_size=None, default_act=None):
             CSPSEResNet,
 
             PositionalEncodingT,
+            ConvFFNNT,
         ):
             args.insert(0, channels[index_])
             args[1] = quantize_channels(args[1] * width_multiple)
