@@ -3,3 +3,5 @@ opencv-python
 pyyaml
 matplotlib
 tqdm
+jupyter
+notebook

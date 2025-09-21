@@ -9,3 +9,4 @@ dataloader-test.py
 *.tgz
 test*
 cfg/models/experiment/
+export/
