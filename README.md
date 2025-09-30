@@ -87,8 +87,5 @@ This project is a sandbox project! This projects will be used for experiments!
 * Memory: DDR5 64GB
 * GPU: RTX 4060 Ti 16GB @ 2.5GHz; 130W x2
 * OS: Ubuntu 24.04 (docker image: nvidia/cuda:12.2.2-cudnn8-devel-ubuntu22.04)
-* Python: CPython 3.10
-* TensorFlow version: 2.17.0
-
-### Model Performance
-Experimenting now...
+* Python: CPython 3.12
+* TensorFlow version: 2.20.0
