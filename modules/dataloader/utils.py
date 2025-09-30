@@ -30,31 +30,31 @@ def resize_contain(image: np.ndarray, target_size=640):
 def checker_log(ok: int, none: int):
     print("Checking files... ok: %-16d\terror: %-16d" % (ok, none), end="\r")
 
-def load_filelist(image: str, loaders: int):
-    images = []
-    labels = []
-
-    images_test = []
+def load_filelist(root: str, loaders: int, bypass: bool):
+    data = []
+    data_tmp = []
     test_queue = queue.Queue()
+    categories = sorted(os.listdir(root))
+    ng = 0
+    ok = 0
 
-    categories = sorted(os.listdir(image))
-
-    for id, category in enumerate(categories):
-        category_path = os.path.join(image, category)
+    for label, category in enumerate(categories):
+        category_path = os.path.join(root, category)
         if os.path.isfile(category_path): continue
 
-        files = os.listdir(category_path)
-        for file in files:
-            file_path = os.path.join(image, category, file)
+        for file in sorted(os.listdir(category_path)):
+            file_path = os.path.join(category_path, file)
             if os.path.isdir(file_path): continue
-            images_test.append([file_path, id])
+            data_tmp.append([file_path, label])
     
-    none = 0
-    ok = 0
+    if bypass:
+        print("File checker was bypassed")
+        return data_tmp, categories
     
-    for mass in range(0, len(images_test), loaders):
-        threads: list[threading.Thread] = []
-        for image, label in images_test[mass:mass + loaders]:
+    for index in range(0, len(data_tmp), loaders):
+        threads = []
+
+        for image, label in data_tmp[index:(index + len(data_tmp))]:
             threads.append(TestImage(image, label, test_queue))
             threads[-1].start()
         
@@ -63,17 +63,17 @@ def load_filelist(image: str, loaders: int):
         
         while not test_queue.empty():
             image, label, flag = test_queue.get()
-            if flag and categories[label] in image:
+
+            if flag:
                 ok += 1
-                images.append(image)
-                labels.append(label)
+                data.append([image, label])
             else:
-                none += 1
+                ng += 1
             
-            checker_log(ok, none)
+            checker_log(ok, ng)
     
-    print()
-    return images, labels, categories
+    print("")
+    return data, categories
 
 class TestImage(threading.Thread):
     def __init__(self, image: Union[str, bytes, bytearray, np.ndarray], label: int, queue: queue.Queue):

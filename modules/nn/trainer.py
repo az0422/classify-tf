@@ -34,10 +34,6 @@ class Trainer():
     def stop(self):
         self.stop_train = True
     
-    def _update_state(self, y_true, y_pred):
-        for m in self.model.metrics:
-            m.update_state(y_true, y_pred)
-
     def _print_metrics(self, prefix=""):
         log_str = []
         for m in self.model.metrics:
@@ -75,25 +71,25 @@ class Trainer():
     def _train_step(self, x, y, p_gradients):
         with tf.GradientTape() as tape:
             pred = self.model(x, training=True)
-            loss = self.model.loss(y, pred)
+            loss = self.model.compute_loss(None, y, pred)
         
         n_gradients = tape.gradient(loss, self.model.trainable_variables)
         gradients = [g1 + g2 for (g1, g2) in zip(p_gradients, n_gradients)]
 
-        self._update_state(y, pred)
+        self.model.compute_metrics(None, y, pred)
 
         return gradients, loss
     
     @tf.function(jit_compile=True)
     def _validate_step(self, x, y):
         pred = self.model(x, training=True)
-        loss = self.model.loss(y, pred)
+        loss = self.model.compute_loss(None, y, pred)
 
-        self._update_state(y, pred)
+        self.model.compute_metrics(None, y, pred)
 
         return loss
     
-    def _train(self, dataloader, epoch, gradient_accumulation_steps=1, buffer2_size=1):
+    def _train(self, dataloader, epoch, gradient_accumulation_steps=1):
         losses = []
         gradients = self._zero_gradients()
         dataloader_bar = tqdm(dataloader, mininterval=0.5, bar_format="{l_bar}{bar:20}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}] {rate_fmt}{postfix}")
@@ -102,41 +98,28 @@ class Trainer():
         start = time.time()
 
         while it < len(dataloader):
-            d_it = 0
             x, y = next(data_wrapper)
 
-            if self.aux:
-                y = tf.expand_dims(y, axis=1)
-                y = tf.tile(y, [1, self.aux_length, 1])
-            
-            mini_batch = x.shape[0] // buffer2_size
-            x = tf.reshape(x, [buffer2_size, mini_batch, *x.shape[1:]])
-            y = tf.reshape(y, [buffer2_size, mini_batch, *y.shape[1:]])
+            gradients, loss = self._train_step(x, y, gradients)
+            losses.append(float(loss))
 
-            for d_it in range(buffer2_size):
-                gradients, loss = self._train_step(x[d_it], y[d_it], gradients)
-                losses.append(float(loss))
+            if epoch < self.warmup_epochs:
+                lr = ((self.learning_rate - self.learning_rate * self.warmup_lr) / (self.warmup_epochs * len(dataloader))) * (it + epoch * len(dataloader)) + (self.learning_rate * self.warmup_lr)
+                self.model.optimizer.learning_rate.assign(lr)
 
-                if epoch < self.warmup_epochs:
-                    lr = ((self.learning_rate - self.learning_rate * self.warmup_lr) / (self.warmup_epochs * len(dataloader))) * (it + d_it + epoch * len(dataloader)) + (self.learning_rate * self.warmup_lr)
-                    self.model.optimizer.learning_rate.assign(lr)
-
-                if (it + d_it + 1) % gradient_accumulation_steps == 0:
-                    gradients = self._apply_gradients(gradients, gradient_accumulation_steps)
-
-                if (it + d_it + 1) >= len(dataloader): break
-
-            d_it += 1
-            dataloader_bar.update(d_it)
-            it += d_it
+            if (it  + 1) % gradient_accumulation_steps == 0:
+                gradients = self._apply_gradients(gradients, gradient_accumulation_steps)
 
             if time.time() - start > 0.5:
                 dataloader_bar.set_postfix_str(("loss: %.4f, " % (np.mean(losses))) + self._print_metrics(), refresh=False)
                 start = time.time()
+
+            dataloader_bar.update(1)
+            it += 1
         
         return np.mean(losses)
     
-    def _validate(self, dataloader, gradient_accumulation_steps=1, buffer2_size=1):
+    def _validate(self, dataloader, gradient_accumulation_steps=1):
         losses = []
         dataloader_bar = tqdm(dataloader, mininterval=0.5, bar_format="{l_bar}{bar:20}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}] {rate_fmt}{postfix}")
         data_wrapper = DataWrapper(dataloader)
@@ -144,25 +127,17 @@ class Trainer():
         start = time.time()
 
         while it < len(dataloader):
-            d_it = 0
             x, y = next(data_wrapper)
 
-            mini_batch = x.shape[0] // buffer2_size
-            x = tf.reshape(x, [buffer2_size, mini_batch, *x.shape[1:]])
-            y = tf.reshape(y, [buffer2_size, mini_batch, *y.shape[1:]])
-            
-            for d_it in range(buffer2_size):
-                loss = self._validate_step(x[d_it], y[d_it])
-                losses.append(float(loss))
-
-                if (it + d_it) >= len(dataloader): break
-            
-            dataloader_bar.update(d_it)
-            it += d_it
+            loss = self._validate_step(x, y)
+            losses.append(float(loss))
 
             if time.time() - start > 0.5:
                 dataloader_bar.set_postfix_str(("val_loss: %.4f, " % (np.mean(losses))) + self._print_metrics("val_"), refresh=False)
                 start = time.time()
+            
+            dataloader_bar.update(1)
+            it += 1
         
         return np.mean(losses)
     
@@ -177,7 +152,7 @@ class Trainer():
         for callback in train_begin + train_end + epoch_begin + epoch_end:
             callback.set_model(self.model, self)
 
-    def train(self, dataloader, dataloaderval, epochs=100, gradient_accumulation_steps=1, buffer2_size=1):
+    def train(self, dataloader, dataloaderval, epochs=100, gradient_accumulation_steps=1):
         for callback in self.train_begin:
             callback(0, None)
         
@@ -187,13 +162,13 @@ class Trainer():
             
             print("Epoch %d/%d" % (epoch + 1, epochs))
 
-            train_loss = self._train(dataloader, epoch, gradient_accumulation_steps, buffer2_size)
+            train_loss = self._train(dataloader, epoch, gradient_accumulation_steps)
             train_log = self._metrics_to_dict()
 
             for m in self.model.metrics:
                 m.reset_state()
             
-            val_loss = self._validate(dataloaderval, gradient_accumulation_steps, buffer2_size)
+            val_loss = self._validate(dataloaderval, gradient_accumulation_steps)
             val_log = self._metrics_to_dict("val_")
 
             logs = {"loss": train_loss, "val_loss": val_loss}

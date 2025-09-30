@@ -88,9 +88,9 @@
 #  - number of file scanners
 #  - an natural number
 # `loaders`:
-#  - number of dataloaders
+#  - a list of numbers of dataloaders
 #  - set on your environment appropriately
-# `queue_size`
+# `buffer_size`
 #  - temporal memory area of each dataloader
 #  - 4 or over (under than 4 is NOT recommended)
 # `resize_method`
@@ -101,8 +101,8 @@
 
 #data_length:
 #file_checkers: 16
-#loaders: 4
-#queue_size: 4
+#loaders: [4, 2]
+#buffer_size: 32
 #resize_method: contain
 
 

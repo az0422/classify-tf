@@ -21,11 +21,10 @@ noise:
 dequality: 0.2
 color_space: BGR
 data_length:
-normalization_device: cpu
 file_checkers: 128
-loaders: 4
+file_checker_bypass: no
+loaders: [4, 2]
 buffer_size: 32
-buffer2_size: 2
 resize_method: contain
 train_image: datasets/train
 val_image: datasets/val
