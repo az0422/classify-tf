@@ -178,10 +178,6 @@ def train(model, dataloader, dataloaderval, cfg, epoch):
         cfg["subdivisions"],
     )
 
-def kill_augment(augments):
-    for augment in augments:
-        augment.terminate()
-
 def main(cfg, checkpoint, epoch, resume):
     gpus = tf.config.list_physical_devices('GPU')
     if gpus:
@@ -228,6 +224,7 @@ def main(cfg, checkpoint, epoch, resume):
         
     except KeyboardInterrupt:
         dataloader.stopAugment()
+        dataloaderval.stopAugment()
 
 if __name__ == "__main__":
     cfg = parse_cfg("cfg/settings.yaml")

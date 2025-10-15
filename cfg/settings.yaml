@@ -36,7 +36,7 @@ optimizer: SGD
 loss: CCE
 loss_args: 
 learning_rate: 0.2
-batch_size: 512
+batch_size: 256
 subdivisions: 4
 image_size: 224 # input size
 epochs: 300

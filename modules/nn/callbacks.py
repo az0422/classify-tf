@@ -1,5 +1,7 @@
 import os
 import math
+import copy
+import json
 
 import tensorflow as tf
 
@@ -27,9 +29,9 @@ class SaveCheckpoint(Callback):
         self.weights_epoch = os.path.join(weights_path, "epoch-%016d.weights.h5")
         self.weights_best = os.path.join(weights_path, "best.weights.h5")
         self.weights_last = os.path.join(weights_path, "last.weights.h5")
-        self.log = os.path.join(path, "train.csv")
+        self.log_path = os.path.join(path, "train.jsonl")
 
-        self.best_loss = 1e+100
+        self.best_loss = None
 
         if not os.path.isdir(weights_path):
             os.makedirs(weights_path)
@@ -38,7 +40,9 @@ class SaveCheckpoint(Callback):
         self.model.save_weights(self.weights_last)
 
         loss = logs["val_loss"]
-        if self.best_loss >= loss:
+        if self.best_loss is None:
+            self.best_loss = loss
+        elif self.best_loss >= loss:
             self.best_loss = loss
             self.model.save_weights(self.weights_best)
 
@@ -47,15 +51,13 @@ class SaveCheckpoint(Callback):
         
         lr = self.model.optimizer.learning_rate.numpy()
 
-        with open(self.log, "a") as f:
-            f.write("%d,%.4f,%.4f,%.4f,%.4f,%.16f\n" % (
-                epoch + 1,
-                logs["accuracy"],
-                logs["loss"],
-                logs["val_accuracy"],
-                logs["val_loss"],
-                lr,
-            ))
+        logs = copy.deepcopy(logs)
+        logs["lr"] = lr.tolist()
+
+        j_data = json.dumps(logs)
+
+        with open(self.log_path, "a") as f:
+            f.write(j_data + "\n")
 
 class Scheduler(Callback):
     def __init__(self, learning_rate=1e-3, scheduler_type="linear", decay_lr=1.0, decay_start=0, decay_epochs=0):

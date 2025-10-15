@@ -54,7 +54,7 @@ def load_filelist(root: str, loaders: int, bypass: bool):
     for index in range(0, len(data_tmp), loaders):
         threads = []
 
-        for image, label in data_tmp[index:(index + len(data_tmp))]:
+        for image, label in data_tmp[index:(index + loaders)]:
             threads.append(TestImage(image, label, test_queue))
             threads[-1].start()
         

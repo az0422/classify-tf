@@ -32,7 +32,7 @@ class DataLoader():
         if type(cfg["loaders"]) is int:
             loaders = cfg["loaders"]
         elif len(cfg["loaders"]) == 1:
-            loaders = cfg["loaders"]
+            loaders = cfg["loaders"][0]
         else:
             loaders = cfg["loaders"][::-1][int(augment_flag)]
         

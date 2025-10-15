@@ -52,8 +52,8 @@ class Trainer():
             result = m.result()
             if type(result) is not dict: continue
 
-            name, value = tuple(result.items())[0]
-            log_dict[prefix+name] = value.numpy()
+            for name, value in result.items():
+                log_dict[prefix+name] = value.numpy().tolist()
 
         return log_dict
 
@@ -171,7 +171,7 @@ class Trainer():
             val_loss = self._validate(dataloaderval, gradient_accumulation_steps)
             val_log = self._metrics_to_dict("val_")
 
-            logs = {"loss": train_loss, "val_loss": val_loss}
+            logs = {"loss": train_loss.tolist(), "val_loss": val_loss.tolist()}
 
             for key in train_log.keys():
                 logs[key] = train_log[key]
