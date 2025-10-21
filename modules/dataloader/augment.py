@@ -3,9 +3,6 @@ import numpy as np
 import random
 import multiprocessing
 import copy
-import tensorflow as tf
-
-from multiprocessing import shared_memory
 
 from .utils import resize_contain, resize_stretch
 
@@ -151,88 +148,49 @@ class DataAugment(multiprocessing.Process):
         self.augment = augment
         self.categories = categories
 
-        self.reader_index_queue = None
-        self.writer_index_queue = None
-        self.images_buff = None
-        self.labels_buff = None
-        self.images_buff_np = None
-        self.labels_buff_np = None
+        self.buffer = None
     
-    def set_buffer(self, images_buff, labels_buff, reader_index, writer_index):
-        self.images_buff = images_buff
-        self.labels_buff = labels_buff
-        self.reader_index_queue = reader_index
-        self.writer_index_queue = writer_index
-
-        self.images_buff_np = np.ndarray(
-            [
-                self.cfg["buffer_size"],
-                self.cfg["batch_size"],
-                self.cfg["image_size"],
-                self.cfg["image_size"],
-                3
-            ],
-            dtype=np.uint8
-        )
-        self.labels_buff_np = np.ndarray(
-            [
-                self.cfg["buffer_size"],
-                self.cfg["batch_size"],
-                self.cfg["classes"],
-            ],
-            dtype=np.uint8
-        )
-
+    def _resize(self, image):
+        if self.cfg["resize_method"] in ("default", "contain"):
+            return resize_contain(image, self.cfg["image_size"])
+        if self.cfg["resize_method"] in ("stretch",):
+            return resize_stretch(image, self.cfg["image_size"])
+        raise Exception("invalid resize method %s" % self.cfg["resize_method"])
+    
+    def set_buffer(self, buffer):
+        self.buffer = buffer
+    
     def run(self):
-        buff_images_shm = np.ndarray(
-            [
-                self.cfg["buffer_size"],
-                self.cfg["batch_size"],
-                self.cfg["image_size"],
-                self.cfg["image_size"],
-                3
-            ],
-            dtype=np.uint8,
-            buffer=self.images_buff.buf
-        )
-        buff_labels_shm = np.ndarray(
-            [
-                self.cfg["buffer_size"],
-                self.cfg["batch_size"],
-                self.cfg["classes"],
-            ],
-            dtype=np.uint8,
-            buffer=self.labels_buff.buf
-        )
+        images = copy.deepcopy(self.images)
+        cfg = copy.deepcopy(self.cfg)
+        augmentor = Augmentor(cfg, self.augment)
 
         buff_images_batch = np.zeros(
             [
-                self.cfg["batch_size"],
-                self.cfg["image_size"],
-                self.cfg["image_size"],
+                cfg["batch_size"],
+                cfg["image_size"],
+                cfg["image_size"],
                 3,
             ],
             dtype=np.uint8
         )
         buff_labels_batch = np.zeros(
             [
-                self.cfg["batch_size"],
-                self.cfg["classes"]
+                cfg["batch_size"],
+                cfg["classes"]
             ],
             dtype=np.uint8
         )
-
-        images = copy.deepcopy(self.images)
-        cfg = copy.deepcopy(self.cfg)
-        augmentor = Augmentor(cfg, self.augment)
         
         while True:
             taked_images_list = random.sample(images, self.cfg["batch_size"])
             np.copyto(buff_images_batch, 0)
             np.copyto(buff_labels_batch, 0)
 
-            for sub_index, (image, label) in enumerate(taked_images_list):
-                image = cv2.imread(image, cv2.IMREAD_COLOR)
+            for sub_index, (image_file, label) in enumerate(taked_images_list):
+                image = cv2.imread(image_file, cv2.IMREAD_COLOR)
+                image = self._resize(image)
+
                 image = augmentor(image)
                 
                 if cfg["color_space"].lower() == "rgb":
@@ -243,7 +201,4 @@ class DataAugment(multiprocessing.Process):
                 np.copyto(buff_images_batch[sub_index], image)
                 buff_labels_batch[sub_index][label] = 1
 
-            data_index = self.writer_index_queue.get()
-            np.copyto(buff_images_shm[data_index], buff_images_batch)
-            np.copyto(buff_labels_shm[data_index], buff_labels_batch)
-            self.reader_index_queue.put(data_index)
+            self.buffer.writeBuffer(buff_images_batch, buff_labels_batch)
