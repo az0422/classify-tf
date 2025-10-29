@@ -42,17 +42,21 @@ def model_compile(cfg, model):
     loss = loss_dict[cfg["loss"].lower()]
     learning_rate = cfg["learning_rate"]
 
+    outputs = len(model.output) if isinstance(model.output, (list, tuple)) else 1
+
     if cfg["loss_args"] is not None:
-        loss = loss(*cfg["loss_args"])
+        loss = [loss(*cfg["loss_args"]) for _ in range(outputs)]
     else:
-        loss = loss()
+        loss = [loss() for _ in range(outputs)]
+    
+    metrics = [['accuracy'] for _ in range(outputs)]
 
     model.compile(
         optimizer=optimizer(
             learning_rate=learning_rate,
         ),
-        loss=loss,
-        metrics=['accuracy']
+        loss=loss[0] if len(loss) == 1 else loss,
+        metrics=metrics[0] if len(metrics) == 1 else metrics,
     )
 
 def create_model(cfg, checkpoint, resume):
@@ -179,6 +183,15 @@ def train(model, dataloader, dataloaderval, cfg, epoch):
     )
 
 def main(cfg, checkpoint, epoch, resume):
+    assert cfg["subdivisions"] > 0, "subdivisions must be set over than 0"
+    assert cfg["batch_size"] % cfg["subdivisions"] == 0, "subdivisions must be set prime factor of batch size"
+    assert cfg["buffer_size"] > 0, "buffer_size must be set over than 0"
+    assert cfg["epochs"] > 0, "epochs must be set over than 0"
+    assert cfg["learning_rate"] > 0, "learning rate must be set over than 0"
+    assert cfg["loaders"] > 0 if type(cfg["loaders"]) is int else all([loader > 0 for loader in cfg["loaders"]]), "loaders must be set over than 0"
+    assert cfg["file_checkers"] > 0, "file_checker must be set over than 0"
+    assert cfg["image_size"] > 0, "image_size must be set over than 0"
+
     gpus = tf.config.list_physical_devices('GPU')
     if gpus:
         try:

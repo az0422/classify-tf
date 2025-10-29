@@ -88,6 +88,24 @@ class Reshape(Layer):
         batch = tf.shape(x)[0]
         return tf.reshape(x, [batch, *self.reshape_])
 
+class MultiAttention(Layer):
+    def __init__(self, alpha=False):
+        super().__init__()
+        self.alpha = alpha
+    
+    def call(self, x, training=None):
+        x1_, x2_ = x # alpha, image
+        x1 = tf.expand_dims(x1_, axis=-1)
+        x2 = tf.expand_dims(x2_, axis=-2)
+        y = x1 * x2
+        
+        if self.alpha:
+            y = tf.concat([y, x1], axis=-1)
+
+        _, h, w, c1, c2 = y.shape
+        y = tf.reshape(y, [-1, h, w, c1 * c2])
+        return y
+
 class SizewiseFlatten(Layer):
     def call(self, x):
         w, h, c = x.shape[-3:]

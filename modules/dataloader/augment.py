@@ -26,7 +26,6 @@ class Augmentor():
         )
     
     def __call__(self, image):
-        np.copyto(self.buffer, 0)
         np.copyto(self.buffer, self._resize(image))
 
         if self.augment_flag:
@@ -150,13 +149,6 @@ class DataAugment(multiprocessing.Process):
 
         self.buffer = None
     
-    def _resize(self, image):
-        if self.cfg["resize_method"] in ("default", "contain"):
-            return resize_contain(image, self.cfg["image_size"])
-        if self.cfg["resize_method"] in ("stretch",):
-            return resize_stretch(image, self.cfg["image_size"])
-        raise Exception("invalid resize method %s" % self.cfg["resize_method"])
-    
     def set_buffer(self, buffer):
         self.buffer = buffer
     
@@ -189,8 +181,6 @@ class DataAugment(multiprocessing.Process):
 
             for sub_index, (image_file, label) in enumerate(taked_images_list):
                 image = cv2.imread(image_file, cv2.IMREAD_COLOR)
-                image = self._resize(image)
-
                 image = augmentor(image)
                 
                 if cfg["color_space"].lower() == "rgb":

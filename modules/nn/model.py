@@ -22,6 +22,7 @@ from .modules import (
     Shortcut,
     Concat,
     Reshape,
+    MultiAttention,
 
     SEBlock,
     CBAM,
@@ -43,6 +44,7 @@ from .modules import (
     ClassifyR,
     ClassifyS,
     ClassifyFC,
+    Bitmap,
     CombineOutput,
 
     MultiHeadAttentionT,
@@ -217,6 +219,19 @@ def parse_model(cfg, classes, image_size=None, default_act=None):
         elif layer is CombineOutput:
             ch = channels[index_[0]]
             channels.append(ch)
+
+        elif layer is Bitmap:
+            args.insert(0, channels[index_])
+            if len(args) < 2:
+                args.insert(1, 3)
+            
+            channels.append(args[1])
+        
+        elif layer is MultiAttention:
+            if len(args) == 0 or not args[0]:
+                channels.append(channels[index_[0]] * channels[index_[1]])
+            else:
+                channels.append(channels[index_[0]] * channels[index_[1]] + channels[index_[0]])
 
         else:
             ch = channels[index_]
