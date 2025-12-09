@@ -12,4 +12,4 @@ network:
  - [-1, 1, Conv, [512, 3, 2]]
  - [-1, 10, CSPResNet2C, [512]]
 
- - [-1, 1, ClassifyR, []]
+ - [-1, 1, Classify, []]

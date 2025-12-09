@@ -18,8 +18,8 @@ class DataWrapper():
 class Trainer():
     def __init__(self, model):
         self.model = model
-        self.aux = len(self.model.outputs[0].shape) == 3
-        self.aux_length = self.model.outputs[0].shape[1] if self.aux else None
+        self.aux = isinstance(model.output, (list, tuple))
+        self.aux_length = len(model.output) if self.aux else None
 
         self.train_begin = []
         self.train_end = []
@@ -89,7 +89,7 @@ class Trainer():
 
         return loss
     
-    def _train(self, dataloader, epoch, gradient_accumulation_steps=1):
+    def _train(self, dataloader, epoch, gradient_accumulation_steps=1, log_level="all"):
         losses = []
         gradients = self._zero_gradients()
         dataloader_bar = tqdm(dataloader, mininterval=0.5, bar_format="{l_bar}{bar:20}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}] {rate_fmt}{postfix}")
@@ -99,6 +99,8 @@ class Trainer():
 
         while it < len(dataloader):
             x, y = next(data_wrapper)
+            if not isinstance(y, (tuple, list)):
+                y = tuple([y for _ in range(self.aux_length)]) if self.aux_length is not None else y
 
             gradients, loss = self._train_step(x, y, gradients)
             losses.append(float(loss))
@@ -111,7 +113,7 @@ class Trainer():
                 gradients = self._apply_gradients(gradients, gradient_accumulation_steps)
 
             if time.time() - start > 0.5:
-                dataloader_bar.set_postfix_str(("loss: %.4f, " % (np.mean(losses))) + self._print_metrics(), refresh=False)
+                dataloader_bar.set_postfix_str(("loss: %.4f, " % (np.mean(losses))) + (self._print_metrics() if log_level == "all" else ""), refresh=False)
                 start = time.time()
 
             dataloader_bar.update(1)
@@ -119,7 +121,7 @@ class Trainer():
         
         return np.mean(losses)
     
-    def _validate(self, dataloader, gradient_accumulation_steps=1):
+    def _validate(self, dataloader, gradient_accumulation_steps=1, log_level="all"):
         losses = []
         dataloader_bar = tqdm(dataloader, mininterval=0.5, bar_format="{l_bar}{bar:20}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}] {rate_fmt}{postfix}")
         data_wrapper = DataWrapper(dataloader)
@@ -128,12 +130,14 @@ class Trainer():
 
         while it < len(dataloader):
             x, y = next(data_wrapper)
+            if not isinstance(y, (tuple, list)):
+                y = tuple([y for _ in range(self.aux_length)]) if self.aux_length is not None else y
 
             loss = self._validate_step(x, y)
             losses.append(float(loss))
 
             if time.time() - start > 0.5:
-                dataloader_bar.set_postfix_str(("val_loss: %.4f, " % (np.mean(losses))) + self._print_metrics("val_"), refresh=False)
+                dataloader_bar.set_postfix_str(("val_loss: %.4f, " % (np.mean(losses))) + (self._print_metrics("val_") if log_level == "all" else ""), refresh=False)
                 start = time.time()
             
             dataloader_bar.update(1)
@@ -152,7 +156,7 @@ class Trainer():
         for callback in train_begin + train_end + epoch_begin + epoch_end:
             callback.set_model(self.model, self)
 
-    def train(self, dataloader, dataloaderval, epochs=100, gradient_accumulation_steps=1):
+    def train(self, dataloader, dataloaderval, epochs=100, gradient_accumulation_steps=1, log_level="all"):
         for callback in self.train_begin:
             callback(0, None)
         
@@ -162,13 +166,13 @@ class Trainer():
             
             print("Epoch %d/%d" % (epoch + 1, epochs))
 
-            train_loss = self._train(dataloader, epoch, gradient_accumulation_steps)
+            train_loss = self._train(dataloader, epoch, gradient_accumulation_steps, log_level)
             train_log = self._metrics_to_dict()
 
             for m in self.model.metrics:
                 m.reset_state()
             
-            val_loss = self._validate(dataloaderval, gradient_accumulation_steps)
+            val_loss = self._validate(dataloaderval, gradient_accumulation_steps, log_level)
             val_log = self._metrics_to_dict("val_")
 
             logs = {"loss": train_loss.tolist(), "val_loss": val_loss.tolist()}

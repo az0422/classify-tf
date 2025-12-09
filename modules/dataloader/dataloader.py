@@ -3,6 +3,7 @@ import random
 import math
 import numpy as np
 import multiprocessing
+import copy
 
 import tensorflow as tf
 
@@ -72,31 +73,30 @@ class DataBuffer():
         self.buff_labels.unlink()
 
 class DataLoader():
-    def __init__(self, images: str, cfg: dict, augment_flag=True):
+    def __init__(self, images: str, cfg: dict, val=True):
         super().__init__()
         random.seed(time.time())
 
-        self.cfg = cfg
-        self.augment_flag = augment_flag
+        self.cfg = copy.deepcopy(cfg)
         self.images, classes_name = load_filelist(images, self.cfg["file_checkers"], self.cfg["file_checker_bypass"])
         self.classes_name = classes_name
         self.classes = len(classes_name)
 
         if cfg["data_length"] in (tuple, list):
-            self.data_length = cfg["data_length"][::-1][int(augment_flag)]
-        elif cfg["data_length"] is not None and augment_flag:
+            self.data_length = cfg["data_length"][::-1][int(val)]
+        elif cfg["data_length"] is not None and val:
             self.data_length = cfg["data_length"]
         else:
-            self.data_length = math.ceil(len(self.images) / self.cfg["batch_size"])
+            self.data_length = math.ceil(len(self.images) / cfg["batch_size"])
         
         if type(cfg["loaders"]) is int:
             loaders = cfg["loaders"]
         elif len(cfg["loaders"]) == 1:
             loaders = cfg["loaders"][0]
         else:
-            loaders = cfg["loaders"][::-1][int(augment_flag)]
-        
-        if augment_flag:
+            loaders = cfg["loaders"][::-1][int(val)]
+
+        if not val:
             self.augments = [
                 DataAugment(
                     random.randrange(-2**31, 2**31 - 1),

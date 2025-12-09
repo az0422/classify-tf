@@ -183,10 +183,16 @@ class DataAugment(multiprocessing.Process):
                 image = cv2.imread(image_file, cv2.IMREAD_COLOR)
                 image = augmentor(image)
                 
-                if cfg["color_space"].lower() == "rgb":
-                    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+                if cfg["color_space"].lower() == "bgr":
+                    np.copyto(buff_images_batch[sub_index], image)
+                elif cfg["color_space"].lower() == "rgb":
+                    np.copyto(buff_images_batch[sub_index], cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
                 elif cfg["color_space"].lower() == "hsv":
-                    image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV).astype(np.uint8)
+                    np.copyto(buff_images_batch[sub_index], cv2.cvtColor(image, cv2.COLOR_BGR2HSV))
+                elif cfg["color_space"].lower() == "ycrcb":
+                    np.copyto(buff_images_batch[sub_index], cv2.cvtColor(image, cv2.COLOR_BGR2YCrCb))
+                else:
+                    np.copyto(buff_images_batch[sub_index], image)
                 
                 np.copyto(buff_images_batch[sub_index], image)
                 buff_labels_batch[sub_index][label] = 1

@@ -180,6 +180,7 @@ def train(model, dataloader, dataloaderval, cfg, epoch):
         dataloaderval,
         cfg["epochs"],
         cfg["subdivisions"],
+        cfg["log_level"],
     )
 
 def main(cfg, checkpoint, epoch, resume):
@@ -191,6 +192,8 @@ def main(cfg, checkpoint, epoch, resume):
     assert cfg["loaders"] > 0 if type(cfg["loaders"]) is int else all([loader > 0 for loader in cfg["loaders"]]), "loaders must be set over than 0"
     assert cfg["file_checkers"] > 0, "file_checker must be set over than 0"
     assert cfg["image_size"] > 0, "image_size must be set over than 0"
+    assert cfg["log_level"] in ("loss", "all"), "log_level must be set in loss or all"
+    assert cfg["buffer_size"] > cfg["sub_buffer_size"], "sub_buffer_size must be set less than buffer_size"
 
     gpus = tf.config.list_physical_devices('GPU')
     if gpus:

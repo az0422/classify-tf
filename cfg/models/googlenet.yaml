@@ -12,24 +12,24 @@ network:
  - [-1, 1, tf.keras.layers.MaxPooling2D, [3, 2, "same"]]
  - [-1, 1, Inception, [128]]
  - [-1, 1, Inception, [128]]
- - [-1, 1, ClassifyR, []] # 7
+ - [-1, 1, Classify, []] # 7
 
  - [-2, 1, tf.keras.layers.MaxPooling2D, [3, 2, "same"]]
  - [-1, 1, Inception, [256]]
  - [-1, 1, Inception, [256]]
  - [-1, 2, Inception, [256]]
  - [-1, 1, Inception, [256]]
- - [-1, 1, ClassifyR, []] # 13
+ - [-1, 1, Classify, []] # 13
 
  - [-2, 1, tf.keras.layers.MaxPooling2D, [3, 2, "same"]]
  - [-1, 1, Inception, [512]]
  - [-1, 1, Inception, [512]]
- - [-1, 1, ClassifyR, []] # 17
+ - [-1, 1, Classify, []] # 17
 
  - [-2, 1, tf.keras.layers.MaxPooling2D, [3, 2, "same"]]
  - [-1, 1, Conv, [1024, 3, 1]]
  - [-1, 1, Conv, [1024, 3, 1]]
 
- - [-1, 1, ClassifyR, []] # 21
+ - [-1, 1, Classify, []] # 21
 
  - [[7, 13, 17, 21], 1, CombineOutput, []]

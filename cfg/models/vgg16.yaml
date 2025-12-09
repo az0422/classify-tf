@@ -19,4 +19,4 @@ network:
  - [-1, 2, Conv, [512, 3, 1]]
  - [-1, 1, tf.keras.layers.MaxPooling2D, [2, 2, "valid"]]
 
- - [-1, 1, ClassifyR, []]
+ - [-1, 1, Classify, []]

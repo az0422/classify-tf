@@ -30,19 +30,13 @@ from .modules import (
     SPPF,
 
     ResNet,
-    ResNet2L,
     SEResNet,
-    ResNetSE,
 
     CSPResNet,
     CSPResNet2C,
-    CSPResNet2L2C,
-    CSPResNet2L3C,
     CSPSEResNet,
 
     Classify,
-    ClassifyR,
-    ClassifyS,
     ClassifyFC,
     Bitmap,
     CombineOutput,
@@ -142,14 +136,10 @@ def parse_model(cfg, classes, image_size=None, default_act=None):
             SPPF,
 
             ResNet,
-            ResNet2L,
             SEResNet,
-            ResNetSE,
 
             CSPResNet,
             CSPResNet2C,
-            CSPResNet2L2C,
-            CSPResNet2L3C,
             CSPSEResNet,
 
             PositionalEncodingT,
@@ -162,19 +152,11 @@ def parse_model(cfg, classes, image_size=None, default_act=None):
             if layer in (
                 CSPResNet,
                 CSPResNet2C,
-                CSPResNet2L2C,
-                CSPResNet2L3C,
                 CSPSEResNet,
             ):
                 args.insert(2, depth)
                 depth_ = depth
                 depth = 1
-            
-            if layer in (ResNetSE,):
-                assert type(depth) in (list, tuple), "This layer requires the list or tuple depth value."
-                args.insert(2, depth[1])
-                depth_ = depth
-                depth = depth[0]
             
             if layer in (FC, Conv, ConvTranspose):
                 if callable(args[-1]):
@@ -204,7 +186,7 @@ def parse_model(cfg, classes, image_size=None, default_act=None):
             ch = args[0][-1]
             channels.append(ch)
 
-        elif layer in (Classify, ClassifyR, ClassifyS, ClassifyFC):
+        elif layer in (Classify, ClassifyFC):
             ch = channels[index_]
             args.insert(0, ch)
             args.insert(1, classes)
