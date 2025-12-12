@@ -73,7 +73,7 @@ class DataBuffer():
         self.buff_labels.unlink()
 
 class DataLoader():
-    def __init__(self, images: str, cfg: dict, val=True):
+    def __init__(self, images: str, cfg: dict, val=False):
         super().__init__()
         random.seed(time.time())
 
@@ -83,7 +83,7 @@ class DataLoader():
         self.classes = len(classes_name)
 
         if cfg["data_length"] in (tuple, list):
-            self.data_length = cfg["data_length"][::-1][int(val)]
+            self.data_length = cfg["data_length"][int(val)]
         elif cfg["data_length"] is not None and val:
             self.data_length = cfg["data_length"]
         else:
@@ -96,29 +96,16 @@ class DataLoader():
         else:
             loaders = cfg["loaders"][::-1][int(val)]
 
-        if not val:
-            self.augments = [
-                DataAugment(
-                    random.randrange(-2**31, 2**31 - 1),
-                    self.images,
-                    self.classes,
-                    cfg,
-                    True,
-                    classes_name,
-                ) for _ in range(loaders)
-            ]
-
-        else:
-            self.augments = [
-                DataAugment(
-                    random.randrange(-2**31, 2**31 - 1),
-                    self.images,
-                    self.classes,
-                    cfg,
-                    False,
-                    classes_name
-                ) for _ in range(loaders)
-            ]
+        self.augments = [
+            DataAugment(
+                random.randrange(-2**31, 2**31 - 1),
+                self.images,
+                self.classes,
+                cfg,
+                not val,
+                classes_name,
+            ) for _ in range(loaders)
+        ]
         
         self.buffer = DataBuffer(cfg)
 

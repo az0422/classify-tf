@@ -119,8 +119,8 @@ def dump_image(images, labels, path, name):
         cv2.imwrite(filename % (label, i), image)
 
 def create_dataloaders(cfg):
-    dataloader = DataLoader(cfg["train_image"], cfg, True)
-    dataloaderval = DataLoader(cfg["val_image"], cfg, False)
+    dataloader = DataLoader(cfg["train_image"], cfg, False)
+    dataloaderval = DataLoader(cfg["val_image"], cfg, True)
 
     dataloader.startAugment()
     dataloaderval.startAugment()
