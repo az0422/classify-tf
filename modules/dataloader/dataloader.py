@@ -1,9 +1,9 @@
 import time
 import random
 import math
-import numpy as np
 import multiprocessing
 import copy
+import numpy as np
 
 import tensorflow as tf
 
@@ -14,20 +14,22 @@ from .augment import DataAugment
 
 class DataBuffer():
     def __init__(self, cfg):
+        self.cfg = cfg
+
         self.reader_index_queue = multiprocessing.Queue(cfg["buffer_size"])
         self.writer_index_queue = multiprocessing.Queue(cfg["buffer_size"])
 
-        self.buff_images = shared_memory.SharedMemory(
+        self.images_buffer = shared_memory.SharedMemory(
             create=True,
-            size=cfg["buffer_size"] * cfg["batch_size"] * (cfg["image_size"] ** 2) * 3
+            size=cfg["buffer_size"] * cfg["batch_size"] * cfg["image_size"] * cfg["image_size"] * 3
         )
 
-        self.buff_labels = shared_memory.SharedMemory(
+        self.labels_buffer = shared_memory.SharedMemory(
             create=True,
             size=cfg["buffer_size"] * cfg["batch_size"] * cfg["classes"]
         )
 
-        self.buff_images_np = np.ndarray(
+        self.images_buffer_np = np.ndarray(
             [
                 cfg["buffer_size"],
                 cfg["batch_size"],
@@ -36,17 +38,17 @@ class DataBuffer():
                 3,
             ],
             dtype=np.uint8,
-            buffer=self.buff_images.buf
+            buffer=self.images_buffer.buf,
         )
 
-        self.buff_labels_np = np.ndarray(
+        self.labels_buffer_np = np.ndarray(
             [
                 cfg["buffer_size"],
                 cfg["batch_size"],
                 cfg["classes"],
             ],
             dtype=np.uint8,
-            buffer=self.buff_labels.buf
+            buffer=self.labels_buffer.buf,
         )
 
         for index in range(cfg["buffer_size"]):
@@ -54,23 +56,27 @@ class DataBuffer():
     
     def writeBuffer(self, images, labels):
         index = self.writer_index_queue.get()
-        np.copyto(self.buff_images_np[index], images)
-        np.copyto(self.buff_labels_np[index], labels)
+
+        self.images_buffer_np[index] = images
+        self.labels_buffer_np[index] = labels
+
         self.reader_index_queue.put(index)
     
     def readBuffer(self):
         index = self.reader_index_queue.get()
-        image = np.copy(self.buff_images_np[index])
-        label = np.copy(self.buff_labels_np[index])
+
+        images = tf.convert_to_tensor(self.images_buffer_np[index], tf.float32) / 255.
+        labels = tf.convert_to_tensor(self.labels_buffer_np[index], tf.float32)
+
         self.writer_index_queue.put(index)
 
-        return image, label
+        return images, labels
 
     def close(self):
-        self.buff_images.close()
-        self.buff_labels.close()
-        self.buff_images.unlink()
-        self.buff_labels.unlink()
+        self.images_buffer.close()
+        self.labels_buffer.close()
+        self.images_buffer.unlink()
+        self.labels_buffer.unlink()
 
 class DataLoader():
     def __init__(self, images: str, cfg: dict, val=False):
@@ -100,10 +106,8 @@ class DataLoader():
             DataAugment(
                 random.randrange(-2**31, 2**31 - 1),
                 self.images,
-                self.classes,
                 cfg,
-                not val,
-                classes_name,
+                not val
             ) for _ in range(loaders)
         ]
         
@@ -128,7 +132,5 @@ class DataLoader():
     
     def __getitem__(self, index=0):
         images, labels = self.buffer.readBuffer()
-        images = tf.convert_to_tensor(images, tf.float32) / 255.
-        labels = tf.convert_to_tensor(labels, tf.float32)
 
         return images, labels

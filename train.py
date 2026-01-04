@@ -135,7 +135,7 @@ def create_dataloaders(cfg):
     images = []
     labels = []
     for _ in range(cfg["subdivisions"]):
-        image, label = dataloader.__getitem__()
+        image, label = dataloader[0]
         images.append(image.numpy())
         labels.append(label.numpy())
     
@@ -144,7 +144,7 @@ def create_dataloaders(cfg):
     images = []
     labels = []
     for _ in range(cfg["subdivisions"]):
-        image, label = dataloaderval.__getitem__()
+        image, label = dataloaderval[0]
         images.append(image.numpy())
         labels.append(label.numpy())
 
@@ -193,7 +193,6 @@ def main(cfg, checkpoint, epoch, resume):
     assert cfg["file_checkers"] > 0, "file_checker must be set over than 0"
     assert cfg["image_size"] > 0, "image_size must be set over than 0"
     assert cfg["log_level"] in ("loss", "all"), "log_level must be set in loss or all"
-    assert cfg["buffer_size"] > cfg["sub_buffer_size"], "sub_buffer_size must be set less than buffer_size"
 
     gpus = tf.config.list_physical_devices('GPU')
     if gpus:

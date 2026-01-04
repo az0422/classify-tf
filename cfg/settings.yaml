@@ -25,7 +25,6 @@ file_checkers: 128
 file_checker_bypass: no
 loaders: [4, 2]
 buffer_size: 32
-sub_buffer_size: 16
 resize_method: contain
 train_image: datasets/train
 val_image: datasets/val

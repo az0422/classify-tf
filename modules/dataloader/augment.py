@@ -29,12 +29,12 @@ class Augmentor():
         np.copyto(self.buffer, self._resize(image))
 
         if self.augment_flag:
-            np.copyto(self.buffer, self._crop(self.buffer))
-            np.copyto(self.buffer, self._flip(self.buffer))
-            np.copyto(self.buffer, self._translate(self.buffer))
-            np.copyto(self.buffer, self._hsv(self.buffer))
-            np.copyto(self.buffer, self._noise(self.buffer))
-            np.copyto(self.buffer, self._dequality(self.buffer))
+            self.buffer[:] = self._crop(self.buffer)
+            self.buffer[:] = self._flip(self.buffer)
+            self.buffer[:] = self._translate(self.buffer)
+            self.buffer[:] = self._hsv(self.buffer)
+            self.buffer[:] = self._noise(self.buffer)
+            self.buffer[:] = self._dequality(self.buffer)
 
         return self.buffer
     
@@ -136,16 +136,14 @@ class Augmentor():
         return image
 
 class DataAugment(multiprocessing.Process):
-    def __init__(self, seed, images, classes, cfg, augment=True, categories=None):
+    def __init__(self, seed, images, cfg, augment=True):
         super().__init__()
         np.random.seed((~seed) & 0xFFFFFFFF)
         random.seed(seed if np.random.rand() > 0.5 else seed * -1)
 
         self.images = images
-        self.classes = classes
         self.cfg = cfg
         self.augment = augment
-        self.categories = categories
 
         self.buffer = None
     
@@ -157,7 +155,7 @@ class DataAugment(multiprocessing.Process):
         cfg = copy.deepcopy(self.cfg)
         augmentor = Augmentor(cfg, self.augment)
 
-        buff_images_batch = np.zeros(
+        images_buffer = np.zeros(
             [
                 cfg["batch_size"],
                 cfg["image_size"],
@@ -166,35 +164,34 @@ class DataAugment(multiprocessing.Process):
             ],
             dtype=np.uint8
         )
-        buff_labels_batch = np.zeros(
+
+        labels_buffer = np.zeros(
             [
                 cfg["batch_size"],
-                cfg["classes"]
+                cfg["classes"],
             ],
             dtype=np.uint8
         )
-        
-        while True:
-            taked_images_list = random.sample(images, self.cfg["batch_size"])
-            np.copyto(buff_images_batch, 0)
-            np.copyto(buff_labels_batch, 0)
 
+        while True:
+            labels_buffer[:] = 0
+            
+            taked_images_list = random.sample(images, self.cfg["batch_size"])
             for sub_index, (image_file, label) in enumerate(taked_images_list):
                 image = cv2.imread(image_file, cv2.IMREAD_COLOR)
                 image = augmentor(image)
                 
                 if cfg["color_space"].lower() == "bgr":
-                    np.copyto(buff_images_batch[sub_index], image)
+                    images_buffer[sub_index] = image
                 elif cfg["color_space"].lower() == "rgb":
-                    np.copyto(buff_images_batch[sub_index], cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+                    images_buffer[sub_index] = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
                 elif cfg["color_space"].lower() == "hsv":
-                    np.copyto(buff_images_batch[sub_index], cv2.cvtColor(image, cv2.COLOR_BGR2HSV))
+                    images_buffer[sub_index] = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
                 elif cfg["color_space"].lower() == "ycrcb":
-                    np.copyto(buff_images_batch[sub_index], cv2.cvtColor(image, cv2.COLOR_BGR2YCrCb))
+                    images_buffer[sub_index] = cv2.cvtColor(image, cv2.COLOR_BGR2YCrCb)
                 else:
-                    np.copyto(buff_images_batch[sub_index], image)
+                    images_buffer[sub_index] = image
                 
-                np.copyto(buff_images_batch[sub_index], image)
-                buff_labels_batch[sub_index][label] = 1
+                labels_buffer[sub_index][label] = 1
 
-            self.buffer.writeBuffer(buff_images_batch, buff_labels_batch)
+            self.buffer.writeBuffer(images_buffer, labels_buffer)
