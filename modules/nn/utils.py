@@ -36,9 +36,6 @@ def calc_flops(model):
         elif op.type in ("Sigmoid", "Softmax"):
             total_flops += np.prod([3, *output], dtype=np.int64)
         
-        elif op.type in ("Cast",):
-            total_flops += np.prod(output, dtype=np.int64)
-        
         elif op.type in ("MatMul",):
             total_flops += np.prod([2, *output], dtype=np.int64)
         
@@ -47,5 +44,8 @@ def calc_flops(model):
             shape_b = op.inputs[1].shape
             if None not in shape_a and None not in shape_b:
                 total_flops += np.prod([2, *shape_a, shape_b[-1]], dtype=np.int64)
+
+        elif op.type in ("Cast", "Placeholder", "Identity", "IdentityN", "ReadVariableOp", "Const", "Relu"):
+            total_flops += 0
     
     return total_flops

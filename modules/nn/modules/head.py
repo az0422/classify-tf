@@ -11,7 +11,6 @@ class Classify(Layer):
         super().__init__()
 
         self.m = Sequential([
-            Conv(in_channels, 1280, 3, 1),
             GlobalAveragePooling2D(),
             Dense(classes, activation=tf.nn.softmax)
         ])

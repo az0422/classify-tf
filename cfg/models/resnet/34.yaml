@@ -5,13 +5,12 @@ activation: relu
 network:
   - [-1, 1, Conv, [64, 7, 2]]
   - [-1, 1, layers.MaxPooling2D, [3, 2, "same"]]
-  - [-1, 1, ResNet2L, [64, 1]]
-  - [-1, 1, ResNet2L, [64, 1]]
+  - [-1, 3, ResNet2L, [64]]
   - [-1, 1, ResNet2L, [128, 2]]
-  - [-1, 1, ResNet2L, [128, 1]]
+  - [-1, 3, ResNet2L, [128]]
   - [-1, 1, ResNet2L, [256, 2]]
-  - [-1, 1, ResNet2L, [256, 1]]
+  - [-1, 5, ResNet2L, [256]]
   - [-1, 1, ResNet2L, [512, 2]]
-  - [-1, 1, ResNet2L, [512, 1]]
+  - [-1, 2, ResNet2L, [512]]
 
   - [-1, 1, Classify, []]

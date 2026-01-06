@@ -20,7 +20,7 @@ class BaseLayer(Layer):
             self.act = None
     
     def build(self, input_shape):
-        assert input_shape[-1] == self.in_channels
+        assert input_shape[-1] == self.in_channels, "%s and %s do not matched" % (input_shape[-1], self.in_channels)
         super().build(input_shape)
     
     def call(self, x, training=None):
@@ -36,11 +36,6 @@ class BaseLayer(Layer):
             return y
         return self.act(y)
 
-class FC(BaseLayer):
-    def __init__(self, in_channels, out_channels, act=True, bn=True):
-        super().__init__(in_channels, act, bn)
-        self.m = Dense(out_channels)
-
 class Conv(BaseLayer):
     def __init__(self, in_channels, out_channels, kernel, strides=1, padding="same", groups=1, dilations=1, act=True, bn=True):
         super().__init__(in_channels, act, bn)
@@ -55,6 +50,11 @@ class ConvTranspose(BaseLayer):
     def __init__(self, in_channels, out_channels, kernel, strides=1, padding="same", groups=1, act=True, bn=True):
         super().__init__(in_channels, act, bn)
         self.m = Conv2DTranspose(out_channels, kernel, strides, padding=padding, groups=groups, use_bias=(not bn))
+
+class FC(BaseLayer):
+    def __init__(self, in_channels, out_channels, act=True, bn=True):
+        super().__init__(in_channels, act, bn)
+        self.m = Dense(out_channels)
 
 class Shortcut(Layer):
     def __init__(self):
@@ -116,3 +116,21 @@ class SizewiseDeflatten(Layer):
         f, c = x.shape[-2:]
 
         return tf.reshape(x, [-1, round(math.sqrt(f)), round(math.sqrt(f)), c])
+
+class WeightedIdentity(Layer):
+    def __init__(self, initial_constant=0):
+        super().__init__()
+        self.initial_constant = initial_constant
+    
+    def build(self, input_shape):
+        self.w = self.add_weight(
+            shape=(),
+            initializer=tf.keras.initializers.Constant(value=self.initial_constant),
+            trainable=True,
+            name="weight"
+        )
+
+        super().build(input_shape)
+    
+    def call(self, x, training=None):
+        return tf.nn.sigmoid(self.w) * x

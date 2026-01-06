@@ -29,12 +29,11 @@ from .modules import (
     Inception,
     SPPF,
 
-    ResNet,
-    SEResNet,
+    ResNet2L,
+    ResNet3L,
 
     CSPResNet,
     CSPResNet2C,
-    CSPSEResNet,
 
     Classify,
     ClassifyFC,
@@ -62,12 +61,8 @@ def parse_model(cfg, classes, image_size=None, default_act=None):
 
     width_multiple = cfg["width_multiple"]
     depth_multiple = cfg["depth_multiple"]
-    activation = cfg["activation"] if "activation" in cfg.keys() else None
-
-    if activation is None:
-        BaseLayer.default_act = layers.Activation("silu" if default_act is None else default_act)
-    else:
-        BaseLayer.default_act = layers.Activation(activation)
+    activation = cfg["activation"] if "activation" in cfg.keys() else "silu"
+    BaseLayer.default_act = layers.Activation(activation)
     
     layers_list = [layers.Input(shape=(image_size, image_size, 3))]
     channels = [3]
@@ -135,12 +130,11 @@ def parse_model(cfg, classes, image_size=None, default_act=None):
             Inception,
             SPPF,
 
-            ResNet,
-            SEResNet,
+            ResNet2L,
+            ResNet3L,
 
             CSPResNet,
             CSPResNet2C,
-            CSPSEResNet,
 
             PositionalEncodingT,
             ConvFFNNT,
@@ -152,16 +146,10 @@ def parse_model(cfg, classes, image_size=None, default_act=None):
             if layer in (
                 CSPResNet,
                 CSPResNet2C,
-                CSPSEResNet,
             ):
                 args.insert(2, depth)
                 depth_ = depth
                 depth = 1
-            
-            if layer in (FC, Conv, ConvTranspose):
-                if callable(args[-1]):
-                    args_ = copy.copy(args)
-                    args_[-1] = "tf.nn." + args[-1].__name__
         
         elif layer in (
             tf.keras.layers.Conv2D,
@@ -177,6 +165,10 @@ def parse_model(cfg, classes, image_size=None, default_act=None):
         ):
             channels.append(channels[index_[0]])
         
+        elif layer is tf.keras.layers.Activation:
+            if args[0] == "default":
+                args[0] = activation
+
         elif layer is Concat:
             ch = [channels[i] for i in index_]
             channels.append(sum(ch))
