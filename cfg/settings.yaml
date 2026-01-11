@@ -1,14 +1,14 @@
 # Defualt settings.
 # Do NOT change this file.
 
-crop_ratio: 0.5
+crop_ratio: 0.75
 crop_method: resize
 flip_vertical: 0.5
 flip_horizontal: 0.5
 rotate_degree: 0
 zoom: 1
-translate_vertical: 0.25
-translate_horizontal: 0.25
+translate_vertical: 0.33
+translate_horizontal: 0.33
 hsv_h: 0.15
 hsv_s: 0.50
 hsv_v: 0.50
