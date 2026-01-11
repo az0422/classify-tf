@@ -168,6 +168,9 @@ def parse_model(cfg, classes, image_size=None, default_act=None):
         elif layer is tf.keras.layers.Activation:
             if args[0] == "default":
                 args[0] = activation
+            
+            ch = channels[index_]
+            channels.append(ch)
 
         elif layer is Concat:
             ch = [channels[i] for i in index_]
