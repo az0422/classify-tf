@@ -118,9 +118,11 @@ class SizewiseDeflatten(Layer):
         return tf.reshape(x, [-1, round(math.sqrt(f)), round(math.sqrt(f)), c])
 
 class WeightedIdentity(Layer):
-    def __init__(self, initial_constant=0):
+    def __init__(self, initial_constant=0, activation="sigmoid", w_clip=None):
         super().__init__()
         self.initial_constant = initial_constant
+        self.w_clip = w_clip if w_clip is None else (w_clip if type(w_clip) in (list, tuple) else [0, w_clip])
+        self.activation = Activation(activation) if activation else tf.identity
     
     def build(self, input_shape):
         self.w = self.add_weight(
@@ -133,4 +135,9 @@ class WeightedIdentity(Layer):
         super().build(input_shape)
     
     def call(self, x, training=None):
-        return tf.nn.sigmoid(self.w) * x
+        if self.w_clip is not None:
+            w = tf.clip_by_value(self.w, *self.w_clip)
+        else:
+            w = self.w
+        
+        return self.activation(w) * x

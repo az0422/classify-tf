@@ -161,7 +161,8 @@ def parse_model(cfg, classes, image_size=None, default_act=None):
         elif layer in (
             Shortcut,
             tf.keras.layers.Multiply,
-            tf.keras.layers.Add
+            tf.keras.layers.Add,
+            tf.keras.layers.Subtract,
         ):
             channels.append(channels[index_[0]])
         
