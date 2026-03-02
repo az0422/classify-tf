@@ -14,10 +14,6 @@ This project is a sandbox project! This projects will be used for experiments!
   
 * Predict: `python3 classify.py weights=path/to/checkpoint_path/checkpoint_name image=path/to/image(s/dir) epoch=[best|last|<an epoch number>](optional) output_format=[csv|stdout](optional)`
 
-* Plot graph: `python3 plot.py path=path/to/checkpoint_path/checkpoint_name`
-  - Used to plot graph of train result.
-  - The graphs will be saved onto `path/to/checkpoint_path/checkpoint_name` with `plot.png`.
-
 * Export: `python3 export.py path=path/to/checkpoint_path/checkpoint_name epoch=[best|last|<an epoch number>] image_size=<image_size>`
   - Export weights to saved_model and TFLite
   - The weights files will be saved onto `path/to/checkpoint_path/checkpoint_name/export`.
@@ -48,38 +44,14 @@ This project is a sandbox project! This projects will be used for experiments!
 ## Model Configurations
 * ResNet Models
   - `resnet/18.yaml`
-  - `resnet/54.yaml`
-  - `resnet/102.yaml`
-  - `resnet/150.yaml`
-  - `resnet2l/15.yaml`
-  - `resnet2l/54.yaml`
-  - `resnet2l/110.yaml`
-
-* CSPResNet Models
-  - `cspresnet/18.yaml`
-  - `cspresnet/54.yaml`
-  - `cspresnet/102.yaml`
-  - `cspresnet/150.yaml`
-  - `cspresnet2c/18.yaml`
-  - `cspresnet2c/54.yaml`
-  - `cspresnet2c/102.yaml`
-  - `cspresnet2c/150.yaml`
-  - `cspresnet2l2c/15.yaml`
-  - `cspresnet2l2c/54.yaml`
-  - `cspresnet2l2c/110.yaml`
-  - `cspresnet2l3c/15.yaml`
-  - `cspresnet2l3c/54.yaml`
-  - `cspresnet2l3c/110.yaml`
+  - `resnet/34.yaml`
+  - `resnet/50.yaml`
+  - `resnet/110.yaml`
+  - `resnet/152.yaml`
 
 * Other Models
   - `vgg16.yaml`
   - `googlenet.yaml`
-
-* Details
-  - The ResNet models are implemented of 3-layers ResNet blocks with bottleneck.
-  - The ResNet2L models are implemented of 2-layers ResNet blocks without bottleneck.
-  - The CSPResNet and CSPResNet2L3C models are implemented of 3-Conv layers to implementing CSPNet structure.
-  - The CSPResNet2C and CSPResNet2L2C models are implemented of 2-Conv layers to implementing CSPNet structure.
 
 ## Experiment
 ### Experimental Environment
