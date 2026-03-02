@@ -23,6 +23,7 @@ from .modules import (
     Concat,
     Reshape,
     MultiAttention,
+    AttentionGate,
 
     SEBlock,
     CBAM,
@@ -124,6 +125,7 @@ def parse_model(cfg, classes, image_size=None, default_act=None):
             Conv,
             ConvT,
             ConvTranspose,
+            AttentionGate,
 
             SEBlock,
             CBAM,
@@ -178,7 +180,9 @@ def parse_model(cfg, classes, image_size=None, default_act=None):
             channels.append(sum(ch))
         
         elif layer is Reshape:
-            assert type(args[0]) is list or tuple, "This layer requires list of shape."
+            if -1 in args[0]:
+                args[0][args[0].index(-1)] = channels[index_]
+            
             ch = args[0][-1]
             channels.append(ch)
 

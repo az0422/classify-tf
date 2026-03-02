@@ -97,3 +97,39 @@ class SPPF(Layer):
         y = tf.concat(y, axis=-1)
         y = tf.cast(y, dtype=x.dtype)
         return self.conv2(y, training=training)
+
+class AttentionGate(Layer):
+    def __init__(self, in_channels, out_channels, gate=2, expands=[1, 2]):
+        super().__init__()
+
+        self.depth = out_channels
+        self.gate = gate
+        self.expands = expands
+        self.conv1 = Conv(in_channels, out_channels, 1, 1, act=False)
+        self.conv2 = Conv(in_channels, out_channels, 1, 1, act=False)
+        self.conv3 = Conv(in_channels, out_channels, 1, 1, act=False) if in_channels != out_channels else None
+        self.dense = Dense(out_channels, kernel_initializer="zeros", activation=tf.nn.sigmoid)
+        self.gap = GlobalAveragePooling2D()
+    
+    def call(self, x, training=None):
+        q = tf.expand_dims(self.gap(self.conv1(x, training=training)), axis=2)
+        k = tf.expand_dims(self.gap(self.conv2(x, training=training)), axis=1)
+
+        if self.conv3 is not None:
+            x_ = self.conv3(x, training=training)
+        else:
+            x_ = x
+
+        v = tf.expand_dims(self.gap(x_), axis=2)
+
+        attn = tf.nn.softmax((q @ k) / tf.sqrt(tf.cast(self.depth, x.dtype)), axis=-1)
+        squeeze = tf.squeeze(attn @ v, axis=-1)
+        gate = self.dense(squeeze, training=training)
+
+        for dim in self.expands:
+            gate = tf.expand_dims(gate, axis=dim)
+
+        return self.gate * gate
+        
+
+

@@ -3,10 +3,7 @@ import numpy as np
 import tensorflow as tf
 
 def calc_flops(model):
-    @tf.function
-    def model_fn(inputs):
-        return model(inputs)
-
+    model_fn = tf.function(lambda inputs: model(inputs))
     input_data = tf.TensorSpec([1, *model.inputs[0].shape[1:]], model.inputs[0].dtype)
     graph = model_fn.get_concrete_function(input_data).graph
 

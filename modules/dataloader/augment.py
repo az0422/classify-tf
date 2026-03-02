@@ -29,7 +29,7 @@ class Augmentor():
         np.copyto(self.buffer, self._resize(image))
 
         if self.augment_flag:
-            self.buffer[:] = self._crop(self.buffer)
+            self.buffer[:] = self._crop(image)
             self.buffer[:] = self._flip(self.buffer)
             self.buffer[:] = self._translate(self.buffer)
             self.buffer[:] = self._hsv(self.buffer)
@@ -40,7 +40,7 @@ class Augmentor():
     
     def _resize(self, image):
         if self.cfg["resize_method"] in ("default", "contain"):
-            return resize_contain(image, self.cfg["image_size"])
+            return resize_contain(image, self.cfg["image_size"], self.cfg["resize_padding"])
         if self.cfg["resize_method"] in ("stretch",):
             return resize_stretch(image, self.cfg["image_size"])
         raise Exception("invalid resize method %s" % self.cfg["resize_method"])
@@ -136,7 +136,7 @@ class Augmentor():
         return image
 
 class DataAugment(multiprocessing.Process):
-    def __init__(self, seed, images, cfg, augment=True):
+    def __init__(self, seed, images, cfg, list_queue, augment=True):
         super().__init__()
         np.random.seed((~seed) & 0xFFFFFFFF)
         random.seed(seed if np.random.rand() > 0.5 else seed * -1)
@@ -144,6 +144,7 @@ class DataAugment(multiprocessing.Process):
         self.images = images
         self.cfg = cfg
         self.augment = augment
+        self.queue = list_queue
 
         self.buffer = None
     
@@ -175,8 +176,13 @@ class DataAugment(multiprocessing.Process):
 
         while True:
             labels_buffer[:] = 0
+            queue_ret = self.queue.get()
+
+            if queue_ret is None:
+                taked_images_list = random.sample(images, self.cfg["batch_size"])
+            else:
+                taked_images_list = [images[index] for index in queue_ret]
             
-            taked_images_list = random.sample(images, self.cfg["batch_size"])
             for sub_index, (image_file, label) in enumerate(taked_images_list):
                 image = cv2.imread(image_file, cv2.IMREAD_COLOR)
                 image = augmentor(image)

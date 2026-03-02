@@ -6,10 +6,11 @@ import cv2
 import numpy as np
 import threading
 
-def resize_stretch(image: np.ndarray, target_size=640):
+def resize_stretch(image: np.ndarray, target_size=640, padding="zero"):
     return cv2.resize(image, (target_size, target_size), interpolation=cv2.INTER_NEAREST)
 
-def resize_contain(image: np.ndarray, target_size=640):
+def resize_contain(image: np.ndarray, target_size=640, padding="zero"):
+    assert padding.lower() in ("zero", "replicate", "reflect"), "resize method %s is invalided" % padding
     height, width, _ = image.shape
 
     scale = target_size / max(height, width)
@@ -23,33 +24,46 @@ def resize_contain(image: np.ndarray, target_size=640):
     top, bottom = pad_height // 2, pad_height - pad_height // 2
     left, right = pad_width // 2, pad_width - pad_width // 2
 
-    image = cv2.copyMakeBorder(image, top, bottom, left, right, cv2.BORDER_REPLICATE)
+    if padding.lower() == "zero":
+        image = cv2.copyMakeBorder(image, top, bottom, left, right, cv2.BORDER_CONSTANT, value=(0, 0, 0))
+    elif padding.lower() == "replicate":
+        image = cv2.copyMakeBorder(image, top, bottom, left, right, cv2.BORDER_REPLICATE)
+    elif padding.lower() == "reflect":
+        image = cv2.copyMakeBorder(image, top, bottom, left, right, cv2.BORDER_REFLECT)
 
     return image
 
 def checker_log(ok: int, none: int):
     print("Checking files... ok: %-16d\terror: %-16d" % (ok, none), end="\r")
 
-def load_filelist(root: str, loaders: int, bypass: bool):
+def load_filelist(root: str, loaders: int, bypass: bool, classes_dict: dict):
     data = []
     data_tmp = []
     test_queue = queue.Queue()
-    categories = sorted(os.listdir(root))
+    categories = [
+        c for c in sorted(os.listdir(root))
+        if os.path.isdir(os.path.join(root, c))
+    ]
+    categories = sorted(categories)
+    
     ng = 0
     ok = 0
 
-    for label, category in enumerate(categories):
+    if classes_dict is None:
+        classes_dict = {category: index for index, category in enumerate(categories)}
+
+    for category in categories:
         category_path = os.path.join(root, category)
         if os.path.isfile(category_path): continue
 
         for file in sorted(os.listdir(category_path)):
             file_path = os.path.join(category_path, file)
             if os.path.isdir(file_path): continue
-            data_tmp.append([file_path, label])
+            data_tmp.append([file_path, classes_dict[category]])
     
     if bypass:
         print("File checker was bypassed")
-        return data_tmp, categories
+        return data_tmp, classes_dict
     
     for index in range(0, len(data_tmp), loaders):
         threads = []
@@ -73,7 +87,7 @@ def load_filelist(root: str, loaders: int, bypass: bool):
             checker_log(ok, ng)
     
     print("")
-    return data, categories
+    return data, classes_dict
 
 class TestImage(threading.Thread):
     def __init__(self, image: Union[str, bytes, bytearray, np.ndarray], label: int, queue: queue.Queue):

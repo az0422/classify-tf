@@ -1,22 +1,27 @@
 import math
 
 import tensorflow as tf
-from tensorflow.keras.layers import Layer, GlobalAveragePooling2D, Dense, Conv2D
+from tensorflow.keras.layers import Layer, GlobalAveragePooling2D, Dense, Conv2D, Activation
 from tensorflow.keras.models import Sequential
 
 from .layers import Conv, FC
 
 class Classify(Layer):
-    def __init__(self, in_channels, classes):
+    def __init__(self, in_channels, classes, act="softmax"):
         super().__init__()
 
         self.m = Sequential([
             GlobalAveragePooling2D(),
-            Dense(classes, activation=tf.nn.softmax)
+            Dense(classes),
         ])
+
+        self.act = Activation(act.lower()) if act.lower() != "logits" else None
     
     def call(self, x, training=None):
         y = self.m(x, training=training)
+        
+        if self.act is not None:
+            y = self.act(y)
 
         return y
 

@@ -1,52 +1,57 @@
 # Defualt settings.
 # Do NOT change this file.
 
-crop_ratio: 0.75
+crop_ratio: 0.9
 crop_method: resize
-flip_vertical: 0.5
+flip_vertical: 0.0
 flip_horizontal: 0.5
 rotate_degree: 0
 zoom: 1
-translate_vertical: 0.33
-translate_horizontal: 0.33
-hsv_h: 0.15
-hsv_s: 0.50
-hsv_v: 0.50
+translate_vertical: 0.01
+translate_horizontal: 0.01
+hsv_h: 0.0
+hsv_s: 0.1
+hsv_v: 0.1
 hsv_offset_h: 0.0
 hsv_offset_s: 0.0
 hsv_offset_v: 0.0
 noise:
   mean: 0
-  std: [0, 20]
-dequality: 0.2
+  std: [0, 5]
+dequality: 0.0
 color_space: BGR
 data_length:
 file_checkers: 128
 file_checker_bypass: no
 loaders: [4, 2]
 buffer_size: 32
+stochastic_ratio: 0.01
 resize_method: contain
+resize_padding: reflect
 train_image: datasets/train
 val_image: datasets/val
+labels_map: cfg/imagenet-label.yaml
 user_option: option.yaml
 
 checkpoint_path: runs
 checkpoint_name: train
 log_level: all
 optimizer: SGD
+optimizer_args:
 loss: CCE
 loss_args: 
+label_smoothing: 0.2
 learning_rate: 0.2
 batch_size: 256
 subdivisions: 4
 image_size: 224 # input size
-epochs: 300
+epochs: 150
 patience: 50
 mixed_precision: mixed_bfloat16
-warmup_epochs: 5
-warmup_lr: 0.001 # learing_rate * warmup_lr (in start)
-scheduler_type: cosine
-decay_lr: 0.01 # learning_rate * decay_ratio (in end)
-decay_start: 15
+warmup_epochs: 2
+warmup_lr: 1.0e-06 # learing_rate * warmup_lr (in start)
+scheduler_type: linear
+decay_lr: 1.0e-04 # learning_rate * decay_ratio (in end)
+decay_start: 5
 save_period: 0
 model: resnet/54.yaml

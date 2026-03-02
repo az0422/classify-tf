@@ -15,7 +15,7 @@ from modules.utils import parse_cfg, apply_local_cfg
 from modules.nn.model import ClassifyModel
 from modules.nn.callbacks import SaveCheckpoint, Scheduler, EarlyStopping
 from modules.nn.trainer import Trainer
-from modules.nn.losses import MSE, MAE, RMSE, AuxiliaryCategoricalCrossEntropy
+from modules.nn.losses import MSE, MAE, RMSE
 from modules.dataloader import DataLoader
 
 def make_checkpoint_path(cfg):
@@ -32,36 +32,38 @@ def make_checkpoint_path(cfg):
 def model_compile(cfg, model):
     optimizer_dict = {"adam": Adam, "adadelta": Adadelta, "adagrad": Adagrad, "adamw": AdamW, "adamax": Adamax,
                       "ftrl": Ftrl, "lion": Lion, "nadam": Nadam, "rmsprop": RMSprop, "sgd": SGD}
-    loss_dict = {"mse": MSE, "rmse": RMSE, "mae": MAE, "cce": CategoricalCrossentropy, "auxcce": AuxiliaryCategoricalCrossEntropy}
+    loss_dict = {"mse": MSE, "rmse": RMSE, "mae": MAE, "cce": CategoricalCrossentropy}
 
     assert cfg["optimizer"].lower() in optimizer_dict.keys(), "Invalid optimizer"
     assert cfg["loss"].lower() in loss_dict.keys(), "Invalid loss function"
     assert cfg["subdivisions"] is None or cfg["batch_size"] % cfg["subdivisions"] == 0, "Invalid subdivisions"
 
-    optimizer = optimizer_dict[cfg["optimizer"].lower()]
-    loss = loss_dict[cfg["loss"].lower()]
     learning_rate = cfg["learning_rate"]
+    optimizer = optimizer_dict[cfg["optimizer"].lower()]
+    optimizer = optimizer(
+        learning_rate=learning_rate
+    ) if cfg["optimizer_args"] is None else (
+        optimizer(learning_rate=learning_rate, **cfg["optimizer_args"])
+    )
+
+    loss = loss_dict[cfg["loss"].lower()]
 
     outputs = len(model.output) if isinstance(model.output, (list, tuple)) else 1
 
     if cfg["loss_args"] is not None:
-        loss = [loss(*cfg["loss_args"]) for _ in range(outputs)]
+        loss = [loss(**cfg["loss_args"]) for _ in range(outputs)]
     else:
         loss = [loss() for _ in range(outputs)]
     
     metrics = [['accuracy'] for _ in range(outputs)]
 
     model.compile(
-        optimizer=optimizer(
-            learning_rate=learning_rate,
-        ),
+        optimizer=optimizer,
         loss=loss[0] if len(loss) == 1 else loss,
         metrics=metrics[0] if len(metrics) == 1 else metrics,
     )
 
-def create_model(cfg, checkpoint, resume):
-    classes = len(os.listdir(cfg["train_image"]))
-
+def create_model(cfg, checkpoint, classes):
     model_cfg = None
     if checkpoint is None:
         model_cfg = cfg["model"]
@@ -76,7 +78,7 @@ def create_model(cfg, checkpoint, resume):
     with open(os.path.join(cfg["path"], "model.yaml"), "w") as f:
         f.write(model.getConfig())
 
-    return model, classes
+    return model
 
 def load_weights(cfg, model, checkpoint, epoch):
     weights_file = os.path.join(checkpoint, "weights")
@@ -119,8 +121,16 @@ def dump_image(images, labels, path, name):
         cv2.imwrite(filename % (label, i), image)
 
 def create_dataloaders(cfg):
-    dataloader = DataLoader(cfg["train_image"], cfg, False)
-    dataloaderval = DataLoader(cfg["val_image"], cfg, True)
+    if cfg["labels_map"] is not None:
+        labels_map_yaml = yaml.safe_load(open(cfg["labels_map"] if os.path.isfile(cfg["labels_map"]) else os.path.join("cfg", cfg["labels_map"]), "r"))["labels"]
+        labels_map = {}
+        for i, key in enumerate(labels_map_yaml.keys() if type(labels_map_yaml) is dict else labels_map_yaml):
+            labels_map[key] = i
+    else:
+        labels_map = None
+
+    dataloader = DataLoader(cfg["train_image"], cfg, False, labels_map)
+    dataloaderval= DataLoader(cfg["val_image"], cfg, True, dataloader.classes_dict)
 
     dataloader.startAugment()
     dataloaderval.startAugment()
@@ -152,7 +162,7 @@ def create_dataloaders(cfg):
 
     return dataloader, dataloaderval
 
-def train(model, dataloader, dataloaderval, cfg, epoch):
+def train(model, dataloader, dataloaderval, cfg):
     trainer = Trainer(model)
     trainer.set_callbacks(
         epoch_begin=[
@@ -183,7 +193,7 @@ def train(model, dataloader, dataloaderval, cfg, epoch):
         cfg["log_level"],
     )
 
-def main(cfg, checkpoint, epoch, resume):
+def main(cfg):
     assert cfg["subdivisions"] > 0, "subdivisions must be set over than 0"
     assert cfg["batch_size"] % cfg["subdivisions"] == 0, "subdivisions must be set prime factor of batch size"
     assert cfg["buffer_size"] > 0, "buffer_size must be set over than 0"
@@ -205,34 +215,21 @@ def main(cfg, checkpoint, epoch, resume):
 
     tf.keras.mixed_precision.set_global_policy(cfg["mixed_precision"])
 
-    if not resume:
+    try:
         checkpoint_path = make_checkpoint_path(cfg)
         cfg["path"] = checkpoint_path
-    else:
-        checkpoint_path = cfg["path"]
 
-    last_epoch = 0
-    print("Create model")
-    model, classes = create_model(cfg, checkpoint, resume)
-    
-    if not resume:
-        last_epoch = 0
-    
-    cfg["classes"] = classes
-    yaml.dump(cfg, open(os.path.join(checkpoint_path, "cfg.yaml"), "w"))
-
-    cfg["batch_size"] = cfg["batch_size"] // cfg["subdivisions"]
-
-    if checkpoint is not None:
-        print("Load weights")
-        model, last_epoch = load_weights(cfg, model, checkpoint, epoch)
-
-    try:
         print("Create data loaders")
         dataloader, dataloaderval = create_dataloaders(cfg)
 
+        cfg["classes"] = dataloader.classes
+        yaml.dump(cfg, open(os.path.join(checkpoint_path, "cfg.yaml"), "w"))
+
+        print("Create model")
+        model = create_model(cfg, checkpoint, dataloader.classes)
+
         print("Train start")
-        train(model, dataloader, dataloaderval, cfg, last_epoch)
+        train(model, dataloader, dataloaderval, cfg)
 
         dataloader.stopAugment()
         dataloaderval.stopAugment()
@@ -266,4 +263,4 @@ if __name__ == "__main__":
     elif local_cfg is not None:
         cfg = apply_local_cfg(cfg, local_cfg)
     
-    main(cfg, checkpoint, epoch, resume)
+    main(cfg)
