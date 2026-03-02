@@ -55,9 +55,18 @@ This project is a sandbox project! This projects will be used for experiments!
 
 ## Experiment
 ### Experimental Environment
-* CPU: AMD Ryzen 7900 @ 4.0GHz; 90W
-* Memory: DDR5 64GB
-* GPU: RTX 4060 Ti 16GB @ 2.5GHz; 130W x2
-* OS: Ubuntu 24.04 (docker image: nvidia/cuda:12.2.2-cudnn8-devel-ubuntu22.04)
+* CPU: AMD Ryzen 7900
+* Memory: DDR5 128GB
+* GPU: RTX 5060 Ti 16GB @ 2.0GHz x2
+* OS: Ubuntu 24.04 (docker image: nvidia/cuda:12.8.1-cudnn8-devel-ubuntu24.04)
 * Python: CPython 3.12
 * TensorFlow version: 2.20.0
+
+### Experimetnal Results
+| Model     | Accuracy | Params | FLOPs |
+|-----------|----------|--------|-------|
+| ResNet18  | 67.15%   | 11.70M | 3.63G |
+| ResNet34  | 69.34%   | 21.81M | 7.34G |
+| ResNet50  | 72.36%   | 26.73M | 8.64G |
+| ResNet101 | 72.76%   | 44.65M | 15.64G |
+| ResNet152 | 73.17%   | 60.34M | 23.08G |
