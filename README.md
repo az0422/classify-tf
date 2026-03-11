@@ -49,6 +49,22 @@ This project is a sandbox project! This projects will be used for experiments!
   - `resnet/110.yaml`
   - `resnet/152.yaml`
 
+* CSPResNetS models
+  - `cspresnets/18.yaml`
+  - `cspresnets/34.yaml`
+  - `cspresnets/50.yaml`
+  - `cspresnets/101.yaml`
+  - `cspresnets/152.yaml`
+
+* CSPResNetS models
+  - `cspresnetp/18.yaml`
+  - `cspresnetp/34.yaml`
+  - `cspresnetp/50.yaml`
+  - `cspresnetp/101.yaml`
+  - `cspresnetp/152.yaml`
+
+* S/P suffix of CSPResNet is meaning of implementation method. S is split by channels, P is projection by channales
+
 * Other Models
   - `vgg16.yaml`
   - `googlenet.yaml`
@@ -70,3 +86,9 @@ This project is a sandbox project! This projects will be used for experiments!
 | ResNet50  | 72.36%   | 26.73M | 8.64G |
 | ResNet101 | 72.76%   | 44.65M | 15.64G |
 | ResNet152 | 73.17%   | 60.34M | 23.08G |
+|                                        |
+| CSPResNetS18 | 66.88%  | 7.28M | 1.88G |
+| CSPResNetS34 | 69.19%  | 9.82M | 2.92G |
+| CSPResNetS50 | 71.81%  | 19.77M | 5.52G |
+| CSPResNetS101 | 73.13%  | 24.27M | 7.27G |
+| CSPResNetS152 | 73.94%  | 28.22M | 9.14G |
