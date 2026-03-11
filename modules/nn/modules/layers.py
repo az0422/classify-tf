@@ -141,3 +141,19 @@ class WeightedIdentity(Layer):
             w = self.w
         
         return self.activation(w) * x
+
+class SplitChannels(Layer):
+    def __init__(self, number):
+        super().__init__()
+        self.number = number
+    
+    def call(self, x, training=None):
+        return tf.split(x, self.number, axis=-1)
+
+class ListSelector(Layer):
+    def __init__(self, index):
+        super().__init__()
+        self.index = index
+    
+    def call(self, x, training=None):
+        return x[self.index]

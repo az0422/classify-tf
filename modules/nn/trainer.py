@@ -16,8 +16,9 @@ class DataWrapper():
         return len(self.data)
 
 class Trainer():
-    def __init__(self, model):
+    def __init__(self, model, start_epoch=0):
         self.model = model
+        self.start_epoch = start_epoch
         self.aux = isinstance(model.output, (list, tuple))
         self.aux_length = len(model.output) if self.aux else None
 
@@ -160,7 +161,7 @@ class Trainer():
         for callback in self.train_begin:
             callback(0, None)
         
-        for epoch in range(epochs):
+        for epoch in range(self.start_epoch, epochs):
             for callback in self.epoch_begin:
                 callback(epoch, None)
             

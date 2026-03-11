@@ -24,6 +24,8 @@ from .modules import (
     Reshape,
     MultiAttention,
     AttentionGate,
+    SplitChannels,
+    ListSelector,
 
     SEBlock,
     CBAM,
@@ -214,6 +216,14 @@ def parse_model(cfg, classes, image_size=None, default_act=None):
                 channels.append(channels[index_[0]] * channels[index_[1]])
             else:
                 channels.append(channels[index_[0]] * channels[index_[1]] + channels[index_[0]])
+        
+        elif layer is SplitChannels:
+            ch = channels[index_]
+            channels.append([ch // args[0] for _ in range(args[0])])
+        
+        elif layer is ListSelector:
+            ch = channels[index_][args[0]]
+            channels.append(ch)
 
         else:
             ch = channels[index_]

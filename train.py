@@ -63,7 +63,7 @@ def model_compile(cfg, model):
         metrics=metrics[0] if len(metrics) == 1 else metrics,
     )
 
-def create_model(cfg, checkpoint, classes):
+def create_model(cfg, checkpoint, classes, resume):
     model_cfg = None
     if checkpoint is None:
         model_cfg = cfg["model"]
@@ -74,38 +74,17 @@ def create_model(cfg, checkpoint, classes):
 
     if not resume:
         model_compile(cfg, model)
-    
-    with open(os.path.join(cfg["path"], "model.yaml"), "w") as f:
-        f.write(model.getConfig())
+
+        with open(os.path.join(cfg["path"], "model.yaml"), "w") as f:
+            f.write(model.getConfig())
 
     return model
 
-def load_weights(cfg, model, checkpoint, epoch):
-    weights_file = os.path.join(checkpoint, "weights")
-    if epoch in ("last", "best"):
-        weights_file = os.path.join(weights_file, epoch) + ".keras"
-    else:
-        weights_file = os.path.join(weights_file, "%016d" % (int(epoch))) + ".keras"
+def load_weights(cfg, model):
+    weights_file = os.path.join(cfg["path"], "weights", "last.weights.h5")
     
     model.load_weights(weights_file)
     model_compile(cfg, model)
-
-    last_epoch = 0
-    train_log = os.path.join(checkpoint, "train.csv")
-
-    with open(train_log, "r") as f:
-        t = f.read().split("\n")
-        last_epoch = len(t)
-
-        if t[-1] == "":
-            last_epoch -= 1
-    
-    if epoch == "best":
-        last_epoch = 0
-    elif epoch != "last":
-        last_epoch = int(epoch)
-
-    return model, last_epoch
 
 def dump_image(images, labels, path, name):
     images = images * 255.
@@ -120,7 +99,7 @@ def dump_image(images, labels, path, name):
         image = np.round(image).astype(np.uint8)
         cv2.imwrite(filename % (label, i), image)
 
-def create_dataloaders(cfg):
+def create_dataloaders(cfg, dump):
     if cfg["labels_map"] is not None:
         labels_map_yaml = yaml.safe_load(open(cfg["labels_map"] if os.path.isfile(cfg["labels_map"]) else os.path.join("cfg", cfg["labels_map"]), "r"))["labels"]
         labels_map = {}
@@ -149,7 +128,8 @@ def create_dataloaders(cfg):
         images.append(image.numpy())
         labels.append(label.numpy())
     
-    dump_image(np.concatenate(images, axis=0), np.concatenate(labels, axis=0), checkpoint_path, "train")
+    if dump:
+        dump_image(np.concatenate(images, axis=0), np.concatenate(labels, axis=0), checkpoint_path, "train")
     
     images = []
     labels = []
@@ -158,12 +138,24 @@ def create_dataloaders(cfg):
         images.append(image.numpy())
         labels.append(label.numpy())
 
-    dump_image(np.concatenate(images, axis=0), np.concatenate(labels, axis=0), checkpoint_path, "val")
+    if dump:
+        dump_image(np.concatenate(images, axis=0), np.concatenate(labels, axis=0), checkpoint_path, "val")
 
     return dataloader, dataloaderval
 
-def train(model, dataloader, dataloaderval, cfg):
-    trainer = Trainer(model)
+def train(model, dataloader, dataloaderval, cfg, resume):
+    epoch = 0
+    if resume:
+        with open(os.path.join(cfg["path"], "train.jsonl"), "r") as f:
+            lines = f.readlines()
+            epoch = len(lines)
+            if lines[-1] == "":
+                epoch -= 1
+    
+        load_weights(cfg, model)
+    
+
+    trainer = Trainer(model, start_epoch=epoch)
     trainer.set_callbacks(
         epoch_begin=[
             Scheduler(
@@ -193,7 +185,7 @@ def train(model, dataloader, dataloaderval, cfg):
         cfg["log_level"],
     )
 
-def main(cfg):
+def main(cfg, resume):
     assert cfg["subdivisions"] > 0, "subdivisions must be set over than 0"
     assert cfg["batch_size"] % cfg["subdivisions"] == 0, "subdivisions must be set prime factor of batch size"
     assert cfg["buffer_size"] > 0, "buffer_size must be set over than 0"
@@ -216,20 +208,22 @@ def main(cfg):
     tf.keras.mixed_precision.set_global_policy(cfg["mixed_precision"])
 
     try:
-        checkpoint_path = make_checkpoint_path(cfg)
-        cfg["path"] = checkpoint_path
+        if not resume:
+            checkpoint_path = make_checkpoint_path(cfg)
+            cfg["path"] = checkpoint_path
 
         print("Create data loaders")
-        dataloader, dataloaderval = create_dataloaders(cfg)
+        dataloader, dataloaderval = create_dataloaders(cfg, not resume)
 
-        cfg["classes"] = dataloader.classes
-        yaml.dump(cfg, open(os.path.join(checkpoint_path, "cfg.yaml"), "w"))
+        if not resume:
+            cfg["classes"] = dataloader.classes
+            yaml.dump(cfg, open(os.path.join(checkpoint_path, "cfg.yaml"), "w"))
 
         print("Create model")
-        model = create_model(cfg, checkpoint, dataloader.classes)
+        model = create_model(cfg, checkpoint, dataloader.classes, resume)
 
         print("Train start")
-        train(model, dataloader, dataloaderval, cfg)
+        train(model, dataloader, dataloaderval, cfg, resume)
 
         dataloader.stopAugment()
         dataloaderval.stopAugment()
@@ -243,24 +237,17 @@ if __name__ == "__main__":
 
     local_cfg = None
     checkpoint = None
-    epoch = "best"
-    resume = False
 
     for arg in sys.argv:
         if arg.startswith("option"):
             local_cfg = arg.split("=", maxsplit=1)[1]
-        elif arg.startswith("checkpoint"):
-            checkpoint = arg.split("=", maxsplit=1)[1]
         elif arg.startswith("resume"):
             resume = True
-            epoch = "last"
             checkpoint = arg.split("=", maxsplit=1)[1]
-        elif arg.startswith("epoch") and epoch == "best":
-            epoch = arg.split("=", maxsplit=1)[1]
     
     if resume:
         cfg = parse_cfg(os.path.join(checkpoint, "cfg.yaml"))
     elif local_cfg is not None:
         cfg = apply_local_cfg(cfg, local_cfg)
     
-    main(cfg)
+    main(cfg, resume)

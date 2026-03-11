@@ -1,0 +1,40 @@
+width_multiple: 1.0
+depth_multiple: 1.0
+activation: relu
+
+network:
+  - [-1, 1, Conv, [64, 7, 2]]
+  - [-1, 1, layers.MaxPooling2D, [3, 2, "same"]]
+  - [-1, 1, SplitChannels, [2]]
+  - [-1, 1, ListSelector, [0]]
+  - [-1, 1, ResNet3L, [128]]
+  - [-1, 2, ResNet3L, [128]]
+  - [-4, 1, ListSelector, [1]]
+  - [[-1, -2], 1, Concat, []]
+  - [-1, 1, Conv, [256, 1, 1]]
+
+  - [-1, 1, ResNet3L, [512, 2]]
+  - [-1, 1, SplitChannels, [2]]
+  - [-1, 1, ListSelector, [0]]
+  - [-1, 3, ResNet3L, [256]]
+  - [-3, 1, ListSelector, [1]]
+  - [[-1, -2], 1, Concat, []]
+  - [-1, 1, Conv, [512, 1, 1]]
+
+  - [-1, 1, ResNet3L, [1024, 2]]
+  - [-1, 1, SplitChannels, [2]]
+  - [-1, 1, ListSelector, [0]]
+  - [-1, 22, ResNet3L, [512]]
+  - [-3, 1, ListSelector, [1]]
+  - [[-1, -2], 1, Concat, []]
+  - [-1, 1, Conv, [1024, 1, 1]]
+
+  - [-1, 1, ResNet3L, [2048, 2]]
+  - [-1, 1, SplitChannels, [2]]
+  - [-1, 1, ListSelector, [0]]
+  - [-1, 2, ResNet3L, [1024]]
+  - [-3, 1, ListSelector, [1]]
+  - [[-1, -2], 1, Concat, []]
+  - [-1, 1, Conv, [2048, 1, 1]]
+
+  - [-1, 1, Classify, []]
