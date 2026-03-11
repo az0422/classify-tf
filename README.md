@@ -56,7 +56,7 @@ This project is a sandbox project! This projects will be used for experiments!
   - `cspresnets/101.yaml`
   - `cspresnets/152.yaml`
 
-* CSPResNetS models
+* CSPResNetP models
   - `cspresnetp/18.yaml`
   - `cspresnetp/34.yaml`
   - `cspresnetp/50.yaml`
