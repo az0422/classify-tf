@@ -10,7 +10,10 @@ This project is a sandbox project! This projects will be used for experiments!
 ### Commands
 * Train: `python3 train.py option=<configuration file (optional)>`
   - Used to obtain weights.
-  - The `option` argument for indivisual training options.
+  - The `option` means argument for indivisual training options.
+
+* Resume: `python3 train.py resume=<checkpoint path>`
+  - The &lt;checkpoint path&gt; means a path of `checkpoint_path` and `checkpoint_name` in `option.yaml`
   
 * Predict: `python3 classify.py weights=path/to/checkpoint_path/checkpoint_name image=path/to/image(s/dir) epoch=[best|last|<an epoch number>](optional) output_format=[csv|stdout](optional)`
 
@@ -92,3 +95,9 @@ This project is a sandbox project! This projects will be used for experiments!
 | CSPResNetS50 | 71.81%  | 19.77M | 5.52G |
 | CSPResNetS101 | 73.13%  | 24.27M | 7.27G |
 | CSPResNetS152 | 73.94%  | 28.22M | 9.14G |
+|                                          |
+| CSPResNetP18 | 68.16%  | 7.64M | 2.10G |
+| CSPResNetP34 | 69.85%  | 10.18M | 3.03G |
+| CSPResNetP50 | 71.03%  | 25.33M | 7.00G |
+| CSPResNetP101 | 71.59%  | 29.83M | 8.76G |
+| CSPResNetP152 | 71.91%  | 33.78M | 10.62G |
