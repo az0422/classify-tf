@@ -70,6 +70,7 @@ def parse_model(cfg, classes, image_size=None, default_act=None):
     layers_list = [layers.Input(shape=(image_size, image_size, 3))]
     channels = [3]
     layer_info = []
+    output_names = []
 
     print("=" * (1 + 8 + 24 + 12 + 40 + 48))
     print(" %-8s%24s%12s%40s%48s" % ("index", "from", "depth", "layer_name", "args"))
@@ -201,8 +202,8 @@ def parse_model(cfg, classes, image_size=None, default_act=None):
             channels.append(args[1])
         
         elif layer is CombineOutput:
-            ch = channels[index_[0]]
-            channels.append(ch)
+            channels.append(-1)
+            output_names = args[0]
 
         elif layer is Bitmap:
             args.insert(0, channels[index_])
@@ -245,13 +246,23 @@ def parse_model(cfg, classes, image_size=None, default_act=None):
     
     print("-" * (1 + 8 + 24 + 12 + 40 + 48))
 
-    return layers_list, layer_info, cfg_str
+    return layers_list, cfg_str, output_names
+
+class NameLayer(layers.Layer):
+    def __init__(self, name="name"):
+        super().__init__(name=name)
+
+    def call(self, x, training=None):
+        return x
 
 class ClassifyModel(Model):
     def __init__(self, cfg, classes, image_size=None, name="classify", **kwargs):
-        self.layers_list, self.layer_info, self.cfg = parse_model(cfg, classes, image_size)
+        self.layers_list, self.cfg, output_names = parse_model(cfg, classes, image_size)
 
-        super().__init__(self.layers_list[0], self.layers_list[-1], name=name, **kwargs)
+        if output_names and isinstance(self.layers_list[-1], (tuple, list)):
+            super().__init__(self.layers_list[0], [NameLayer("%s" % n)(y) for n, y in zip(output_names, self.layers_list[-1])], name=name, **kwargs)
+        else:
+            super().__init__(self.layers_list[0], self.layers_list[-1], name=name, **kwargs)
 
         print("Total parameters: %.4f M" % (self.count_params() / 1e+6))
         print("Total FLOPs: %.4f GFLOPs per image" % (calc_flops(self) / 1e+9))

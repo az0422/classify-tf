@@ -50,9 +50,8 @@ class Bitmap(Layer):
         return y
 
 class CombineOutput(Layer):
+    def __init__(self, _, **kwargs):
+        super().__init__(**kwargs)
+    
     def call(self, x, training=None):
-        x = [tf.expand_dims(xx, axis=1) for xx in x]
-        x = tf.concat(x, axis=1)
-
-        if training: return x
-        return x[:, -1]
+        return x

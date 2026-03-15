@@ -32,4 +32,4 @@ network:
 
  - [-1, 1, Classify, []] # 21
 
- - [[7, 13, 17, 21], 1, CombineOutput, []]
+ - [[7, 13, 17, 21], 1, CombineOutput, [["aux0", "aux1", "aux2", "main"]]]

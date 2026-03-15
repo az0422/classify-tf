@@ -237,6 +237,7 @@ if __name__ == "__main__":
 
     local_cfg = None
     checkpoint = None
+    resume = False
 
     for arg in sys.argv:
         if arg.startswith("option"):
