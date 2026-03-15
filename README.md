@@ -25,6 +25,21 @@ This project is a sandbox project! This projects will be used for experiments!
   - The default uses all GPUs.
   - If you have multiple GPUs and want to select specific GPU, you have to use this command form or set the `CUDA_VISIBLE_DEVICES` variable.
 
+### Dataset File Structure
+```
+dataset/
+ ├ train/
+ │   ├ class1/
+ |   |   └ image1.xxx
+ │   └ class2/
+ |       └ image2.xxx
+ └ val/
+     ├ class1/
+     |   └ image3.xxx
+     └ class2/
+         └ image4.xxx
+```
+
 ### Options
 #### Option application order
 1. `cfg/settings.yaml` (default settings)
@@ -101,3 +116,5 @@ This project is a sandbox project! This projects will be used for experiments!
 | CSPResNetP50 | 71.03%  | 25.33M | 7.00G |
 | CSPResNetP101 | 71.59%  | 29.83M | 8.76G |
 | CSPResNetP152 | 71.91%  | 33.78M | 10.62G |
+
+Trained and evaluated in ImageNet2012 dataset.
