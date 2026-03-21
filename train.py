@@ -20,6 +20,7 @@ from modules.dataloader import DataLoader
 
 def make_checkpoint_path(cfg):
     checkpoint_path = os.path.join(cfg["checkpoint_path"], cfg["checkpoint_name"])
+    checkpoint_path = os.path.expandvars(checkpoint_path)
     if os.path.isdir(checkpoint_path):
         index = 2
         while os.path.isdir(checkpoint_path + str(index)): index += 1
@@ -61,6 +62,7 @@ def model_compile(cfg, model):
         optimizer=optimizer,
         loss=loss[0] if len(loss) == 1 else loss,
         metrics=metrics[0] if len(metrics) == 1 else metrics,
+        loss_weights=cfg["loss_weights"]
     )
 
 def create_model(cfg, checkpoint, classes, resume):
@@ -107,9 +109,12 @@ def create_dataloaders(cfg, dump):
             labels_map[key] = i
     else:
         labels_map = None
+    
+    train_path = os.path.expandvars(cfg["train_image"])
+    val_path = os.path.expandvars(cfg["val_image"])
 
-    dataloader = DataLoader(cfg["train_image"], cfg, False, labels_map)
-    dataloaderval= DataLoader(cfg["val_image"], cfg, True, dataloader.classes_dict)
+    dataloader = DataLoader(train_path, cfg, False, labels_map)
+    dataloaderval= DataLoader(val_path, cfg, True, dataloader.classes_dict)
 
     dataloader.startAugment()
     dataloaderval.startAugment()
@@ -245,7 +250,8 @@ if __name__ == "__main__":
         elif arg.startswith("resume"):
             resume = True
             checkpoint = arg.split("=", maxsplit=1)[1]
-    
+            checkpoint = os.path.expandvars(checkpoint)
+
     if resume:
         cfg = parse_cfg(os.path.join(checkpoint, "cfg.yaml"))
     elif local_cfg is not None:

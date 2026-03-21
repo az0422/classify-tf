@@ -177,12 +177,8 @@ class Trainer():
             val_log = self._metrics_to_dict("val_")
 
             logs = {"loss": train_loss.tolist(), "val_loss": val_loss.tolist()}
-
-            for key in train_log.keys():
-                logs[key] = train_log[key]
-            
-            for key in val_log.keys():
-                logs[key] = val_log[key]
+            logs.update(train_log)
+            logs.update(val_log)
             
             for callback in self.epoch_end:
                 callback(epoch, logs)

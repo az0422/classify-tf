@@ -1,9 +1,6 @@
 import os
 import math
-import copy
 import json
-
-import tensorflow as tf
 
 class Callback():
     def __init__(self):
@@ -50,9 +47,7 @@ class SaveCheckpoint(Callback):
             self.model.save_weights(self.weights_epoch % (epoch + 1))
         
         lr = self.model.optimizer.learning_rate.numpy()
-
-        logs = copy.deepcopy(logs)
-        logs["lr"] = lr.tolist()
+        logs.update({"lr": lr.tolist()})
 
         j_data = json.dumps(logs)
 
