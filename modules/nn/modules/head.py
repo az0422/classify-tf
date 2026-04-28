@@ -1,5 +1,3 @@
-import math
-
 import tensorflow as tf
 from tensorflow.keras.layers import Layer, GlobalAveragePooling2D, Dense, Conv2D, Activation
 from tensorflow.keras.models import Sequential

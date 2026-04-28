@@ -1,0 +1,16 @@
+width_multiple: 1.0
+depth_multiple: 1.0
+activation: relu
+
+network:
+  - [-1, 1, Conv, [64, 7, 2]]
+  - [-1, 1, layers.MaxPooling2D, [3, 2, "same"]]
+  - [-1, 6, DenseNet, [32]]
+  - [-1, 1, Transition, [(64+32*6)//2]]
+  - [-1, 12, DenseNet, [32]]
+  - [-1, 1, Transition, [((64+32*6)//2+32*12)//2]]
+  - [-1, 24, DenseNet, [32]]
+  - [-1, 1, Transition, [(((64+32*6)//2+32*12)//2+32*24)//2]]
+  - [-1, 16, DenseNet, [32]]
+
+  - [-1, 1, Classify, []]

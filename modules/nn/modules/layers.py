@@ -36,20 +36,41 @@ class BaseLayer(Layer):
             return y
         return self.act(y)
 
+class BaseLayerR(BaseLayer):
+    def call(self, x, training=None):
+        if self.m is None:
+            raise NotImplementedError
+        
+        y = self.bn(x, training=training)
+        y = self.act(y, training=training)
+        y = self.m(y, training=training)
+
+        return y
+
 class Conv(BaseLayer):
-    def __init__(self, in_channels, out_channels, kernel, strides=1, padding="same", groups=1, dilations=1, act=True, bn=True):
+    def __init__(self, in_channels, out_channels, kernel, strides=1, padding="same", groups=1, dilations=1, act=True, bn=True, bias=True):
         super().__init__(in_channels, act, bn)
-        self.m = Conv2D(out_channels, kernel, strides, padding=padding, groups=groups, dilation_rate=dilations, use_bias=(not bn))
+        self.m = Conv2D(out_channels, kernel, strides, padding=padding, groups=groups, dilation_rate=dilations, use_bias=(not bn and bias))
+
+class ConvR(BaseLayerR):
+    def __init__(self, in_channels, out_channels, kernel, strides=1, padding="same", groups=1, dilations=1, act=True, bn=True, bias=True):
+        super().__init__(in_channels, act, bn)
+        self.m = Conv2D(out_channels, kernel, strides, padding=padding, groups=groups, dilation_rate=dilations, use_bias=(not bn and bias))
 
 class ConvT(BaseLayer):
-    def __init__(self, in_channels, out_channels, kernel, strides=1, padding="same", groups=1, dilations=1, act=True, bn=True):
+    def __init__(self, in_channels, out_channels, kernel, strides=1, padding="same", groups=1, dilations=1, act=True, bn=True, bias=True):
         super().__init__(in_channels, act, bn)
-        self.m = Conv1D(out_channels, kernel, strides, padding=padding, groups=groups, dilation_rate=dilations, use_bias=(not bn))
+        self.m = Conv1D(out_channels, kernel, strides, padding=padding, groups=groups, dilation_rate=dilations, use_bias=(not bn and bias))
+
+class ConvTR(BaseLayerR):
+    def __init__(self, in_channels, out_channels, kernel, strides=1, padding="same", groups=1, dilations=1, act=True, bn=True, bias=True):
+        super().__init__(in_channels, act, bn)
+        self.m = Conv1D(out_channels, kernel, strides, padding=padding, groups=groups, dilation_rate=dilations, use_bias=(not bn and bias))
 
 class ConvTranspose(BaseLayer):
-    def __init__(self, in_channels, out_channels, kernel, strides=1, padding="same", groups=1, act=True, bn=True):
+    def __init__(self, in_channels, out_channels, kernel, strides=1, padding="same", groups=1, act=True, bn=True, bias=True):
         super().__init__(in_channels, act, bn)
-        self.m = Conv2DTranspose(out_channels, kernel, strides, padding=padding, groups=groups, use_bias=(not bn))
+        self.m = Conv2DTranspose(out_channels, kernel, strides, padding=padding, groups=groups, use_bias=(not bn and bias))
 
 class FC(BaseLayer):
     def __init__(self, in_channels, out_channels, act=True, bn=True):

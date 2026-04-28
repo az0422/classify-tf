@@ -4,6 +4,7 @@ import tensorflow as tf
 
 def calc_flops(model):
     model_fn = tf.function(lambda inputs: model(inputs))
+
     input_data = tf.TensorSpec([1, *model.inputs[0].shape[1:]], model.inputs[0].dtype)
     graph = model_fn.get_concrete_function(input_data).graph
 
@@ -20,12 +21,12 @@ def calc_flops(model):
         elif len(output) == 0:
             output = [1]
 
-        if op.type in ("Conv1D", "Conv2D", "Conv3D"):
+        if op.type in ("Conv1D", "Conv2D", "Conv3D", "Conv1DBackpropInput", "Conv2DBackpropInput", "Conv3DBackpropInput"):
             input_shape = op.inputs[1].get_shape()
             total_flops += np.prod([2, *input_shape, *output[:-1]], dtype=np.int64)
         
         elif op.type in ("AddV2", "Mul", "Sub", "Div", "Mean", "Maximum", "Square", "Sum", "Neg", "Sqrt", "BiasAdd"):
-            total_flops += np.prod(output, dtype=np.int64)
+            total_flops += np.prod (output, dtype=np.int64)
         
         elif op.type in ("Rsqrt", "SquaredDifference"):
             total_flops += np.prod([2, *output], dtype=np.int64)

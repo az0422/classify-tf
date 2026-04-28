@@ -1,9 +1,6 @@
 import yaml
 import os
 import math
-import numpy as np
-import gc
-import copy
 
 import tensorflow as tf
 from tensorflow.keras import layers
@@ -17,13 +14,14 @@ from .modules import (
     BaseLayer,
     FC,
     Conv,
+    ConvR,
     ConvT,
+    ConvTR,
     ConvTranspose,
     Shortcut,
     Concat,
     Reshape,
     MultiAttention,
-    AttentionGate,
     SplitChannels,
     ListSelector,
 
@@ -32,11 +30,17 @@ from .modules import (
     Inception,
     SPPF,
 
+    DenseNet,
+    Transition,
+
     ResNet2L,
     ResNet3L,
-
-    CSPResNet,
-    CSPResNet2C,
+    ResNet2LV2,
+    ResNet3LV2,
+    CSPResNet2LS,
+    CSPResNet3LS,
+    CSPResNet2LP,
+    CSPResNet3LP,
 
     Classify,
     ClassifyFC,
@@ -126,20 +130,26 @@ def parse_model(cfg, classes, image_size=None, default_act=None):
         if layer in (
             FC,
             Conv,
+            ConvR,
             ConvT,
+            ConvTR,
             ConvTranspose,
-            AttentionGate,
 
             SEBlock,
             CBAM,
             Inception,
             SPPF,
 
+            Transition,
+
             ResNet2L,
             ResNet3L,
-
-            CSPResNet,
-            CSPResNet2C,
+            ResNet2LV2,
+            ResNet3LV2,
+            CSPResNet2LS,
+            CSPResNet3LS,
+            CSPResNet2LP,
+            CSPResNet3LP,
 
             PositionalEncodingT,
             ConvFFNNT,
@@ -149,12 +159,21 @@ def parse_model(cfg, classes, image_size=None, default_act=None):
             channels.append(args[1])
 
             if layer in (
-                CSPResNet,
-                CSPResNet2C,
+                CSPResNet2LS, CSPResNet3LS,
+                CSPResNet2LP, CSPResNet3LP,
             ):
                 args.insert(2, depth)
                 depth_ = depth
                 depth = 1
+        
+        elif layer in (
+            DenseNet,
+        ):
+            args.insert(0, channels[index_])
+            args.insert(2, depth)
+            channels.append(channels[index_] + args[1] * depth)
+            depth_ = depth
+            depth = 1
         
         elif layer in (
             tf.keras.layers.Conv2D,

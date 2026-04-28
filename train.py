@@ -158,7 +158,6 @@ def train(model, dataloader, dataloaderval, cfg, resume):
                 epoch -= 1
     
         load_weights(cfg, model)
-    
 
     trainer = Trainer(model, start_epoch=epoch)
     trainer.set_callbacks(
