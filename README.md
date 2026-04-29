@@ -81,6 +81,12 @@ dataset/
   - `cspresnetp/101.yaml`
   - `cspresnetp/152.yaml`
 
+* DenseNet Models
+  - `densenet/121.yaml`
+  - `densenet/169.yaml`
+  - `densenet/201.yaml`
+  - `densenet/264.yaml`
+
 * S/P suffix of CSPResNet is meaning of implementation method. S is split by channels, P is projection by channales
 
 * Other Models
@@ -92,9 +98,9 @@ dataset/
 * CPU: AMD Ryzen 7900
 * Memory: DDR5 128GB
 * GPU: RTX 5060 Ti 16GB @ 2.0GHz x2
-* OS: Ubuntu 24.04 (docker image: nvidia/cuda:12.8.1-cudnn8-devel-ubuntu24.04)
+* OS: Ubuntu 26.04 (docker image: nvidia/cuda:13.1.1-cudnn-devel-ubuntu24.04)
 * Python: CPython 3.12
-* TensorFlow version: 2.20.0
+* TensorFlow version: 2.21.0
 
 ### Experimetnal Results
 | Model     | Accuracy | Params | FLOPs |
@@ -105,11 +111,11 @@ dataset/
 | ResNet101 | 72.76%   | 44.65M | 15.64G |
 | ResNet152 | 73.17%   | 60.34M | 23.08G |
 |                                        |
-| CSPResNetS18 | 66.88%  | 7.28M | 1.88G |
-| CSPResNetS34 | 69.19%  | 9.82M | 2.92G |
-| CSPResNetS50 | 71.81%  | 19.77M | 5.52G |
-| CSPResNetS101 | 73.13%  | 24.27M | 7.27G |
-| CSPResNetS152 | 73.94%  | 28.22M | 9.14G |
+| CSPResNetS18 | 68.11%  | 7.64M | 2.10G |
+| CSPResNetS34 | 69.98%  | 10.18M | 3.03G |
+| CSPResNetS50 | 70.31%  | 25.33M | 7.00G |
+| CSPResNetS101 | 73.84%  | 29.83M | 8.76G |
+| CSPResNetS152 | 72.11%  | 33.78M | 10.62G |
 |                                          |
 | CSPResNetP18 | 68.16%  | 7.64M | 2.10G |
 | CSPResNetP34 | 69.85%  | 10.18M | 3.03G |
