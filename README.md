@@ -122,5 +122,10 @@ dataset/
 | CSPResNetP50 | 71.03%  | 25.33M | 7.00G |
 | CSPResNetP101 | 71.59%  | 29.83M | 8.76G |
 | CSPResNetP152 | 71.91%  | 33.78M | 10.62G |
+|                                           |
+| DenseNet121 | 73.22% | 8.06M | 5.70G |
+| DenseNet169 | 70.53% | 14.30M | 6.75G |
+| DenseNet201 | 71.74% | 20.24M | 8.63G |
+| DenseNet264 | 71.87% | 33.73M | 11.57G |
 
 Trained and evaluated in ImageNet2012 dataset.
